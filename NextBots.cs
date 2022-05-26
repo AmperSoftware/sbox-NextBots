@@ -5,16 +5,16 @@ namespace Amper.NextBot;
 
 public partial class NextBots
 {
-	[ConVar.Replicated] public static float nb_update_frequency { get; set; } = 0.1f;
+	// This really should be 0.1f by default, otherwise too many agents will cause sever performance issues.
+	// But to achieve that we need to somehow interpolate our bots' movement. 
+	// When we achieve that, put this back to 0.1f.
+	[ConVar.Replicated] public static float nb_update_frequency { get; set; } = 0.01f;
 
 	public static NextBots Current => _current == null ? (_current = new NextBots()) : _current;
 	static NextBots _current;
 
 	public NextBots()
 	{
-		if ( IsDebugging() )
-			Log.Info( "NextBots Manager Created!" );
-
 		Event.Register( this );
 	}
 

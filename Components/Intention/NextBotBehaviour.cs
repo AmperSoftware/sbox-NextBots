@@ -1,9 +1,10 @@
-﻿using System;
-
-namespace Amper.NextBot;
+﻿namespace Amper.NextBot;
 
 public interface INextBotBehavior { }
 
+/// <summary>
+/// This is the behavior of our bot, it manages Actions that define what the bot is doing.
+/// </summary>
 public class NextBotBehavior<T> : INextBotEventReceiver where T :  INextBot
 {
 	T Me { get; set; }

@@ -2,6 +2,9 @@
 
 namespace Amper.NextBot;
 
+/// <summary>
+/// Allows the bot to traverse on the ground.
+/// </summary>
 public class NextBotGroundLocomotion : NextBotLocomotion
 {
 	public NextBotGroundLocomotion( INextBot me ) : base( me ) { }

@@ -21,6 +21,9 @@ public interface INextBotVision
 	public void AlertOfEntity( Entity entity );
 }
 
+/// <summary>
+/// What the bot sees.
+/// </summary>
 public class NextBotVision : NextBotComponent, INextBotVision
 {
 	IEnumerable<KnownEntity> INextBotVision.KnownEntities => KnownEntities;

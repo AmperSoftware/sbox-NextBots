@@ -9,12 +9,18 @@ partial class NextBotController : INextBotPlayerInput
 	Dictionary<InputButton, float> InputButtonsTime = new();
 	float AnalogMoveTime;
 
+	/// <summary>
+	/// Force player bot to press a specific button.
+	/// </summary>
 	public void PressInputButton( InputButton button, float duration = -1 )
 	{
 		Input.Buttons |= button;
 		InputButtonsTime[button] = Time.Now + duration;
 	}
 
+	/// <summary>
+	/// Force player bot to release a specific button.
+	/// </summary>
 	public void ReleaseInputButton( InputButton button )
 	{
 		Input.Buttons &= ~button;

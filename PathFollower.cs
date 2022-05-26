@@ -74,6 +74,7 @@ public class NextBotPathFollower : IValid
 		var forward = goalNode.Position - mover.GetFeet();
 
 		// Climp Up is not used in s&box's navmesh.
+		// Facepunch pls fix.
 #if false
 if ( m_goal->type == CLIMB_UP )
 	{
@@ -371,5 +372,4 @@ if ( m_goal->type == CLIMB_UP )
 	[ConVar.Server] public static bool nb_allow_climbing { get; set; } = true;
 	[ConVar.Server] public static bool nb_allow_gap_jumping { get; set; } = true;
 	[ConVar.Server] public static bool nb_allow_avoiding { get; set; } = true;
-
 }

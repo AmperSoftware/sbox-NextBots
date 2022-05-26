@@ -2,6 +2,9 @@
 
 namespace Amper.NextBot;
 
+/// <summary>
+/// Extend this interface on any entity that you wish to turn into a nextbot.
+/// </summary>
 public interface INextBot : IValid
 {
 	public NextBotController NextBot { get; set; }

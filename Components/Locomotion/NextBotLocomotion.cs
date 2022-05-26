@@ -47,6 +47,9 @@ public interface INextBotLocomotion : INextBotComponent
 
 }
 
+/// <summary>
+/// This is the locomotion interface. This define how bot moves around in the world.
+/// </summary>
 public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 {
 	public NextBotLocomotion( INextBot me ) : base( me ) 

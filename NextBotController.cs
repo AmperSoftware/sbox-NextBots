@@ -2,6 +2,9 @@
 
 namespace Amper.NextBot;
 
+/// <summary>
+/// This is the mind of our nextbot, it manages all the components.
+/// </summary>
 public partial class NextBotController : IValid
 {
 	public INextBot Bot { get; private set; }

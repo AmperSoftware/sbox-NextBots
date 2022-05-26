@@ -5,6 +5,9 @@ namespace Amper.NextBot;
 
 public interface INextBotAnimator { }
 
+/// <summary>
+/// This component deals with bot's body. It sets all the animgraph parameters based on the entity's state.
+/// </summary>
 public class NextBotAnimator : NextBotComponent, INextBotAnimator
 {
 	AnimatedEntity Entity { get; set; }

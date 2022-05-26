@@ -31,6 +31,9 @@ partial class NextBotAction<T> : INextBotEventReceiver
 		}
 	}
 
+	/// <summary>
+	/// Set the callback of a nextbot event to some function. Can be only one per event!
+	/// </summary>
 	public void SubscribeToEvent<U>( NextBotActionEventCallback<T, U> callback ) where U: NextBotEvent
 	{
 		var typeHint = typeof( U );

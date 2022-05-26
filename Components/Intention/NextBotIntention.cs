@@ -1,9 +1,10 @@
-﻿using System;
-
-namespace Amper.NextBot;
+﻿namespace Amper.NextBot;
 
 public interface INextBotIntention { }
 
+/// <summary>
+/// This is the intention interface for the bot. It contains one more multiple behaviors.
+/// </summary>
 public class NextBotIntention<Actor, InitialAction> : NextBotComponent, INextBotIntention where Actor : INextBot where InitialAction : NextBotAction<Actor>, new()
 {
 	NextBotBehavior<Actor> Behavior { get; set; }

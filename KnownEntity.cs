@@ -3,6 +3,9 @@ using System;
 
 namespace Amper.NextBot;
 
+/// <summary>
+/// This is some entity we are aware about.
+/// </summary>
 public class KnownEntity : IEquatable<KnownEntity>
 {
 	public Entity Entity { get; set; }
