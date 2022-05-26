@@ -25,7 +25,7 @@ public abstract partial class NextBotPlayer : Bot
 		{
 			Locomotion = new NextBotPlayerLocomotion( bot ),
 			Vision = new NextBotVision( bot ),
-			Body = new NextBotPlayerBody( bot )
+			Animator = new NextBotAnimator( bot )
 		};
 	}
 

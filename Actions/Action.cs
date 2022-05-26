@@ -28,6 +28,9 @@ public partial class NextBotAction<T> where T : INextBot
 
 		SubscribeToEvent<NextBotEventSight>( OnSight );
 		SubscribeToEvent<NextBotEventLostSight>( OnLostSight );
+
+		SubscribeToEvent<NextBotEventLeaveGround>( OnLeaveGround );
+		SubscribeToEvent<NextBotEventLandOnGround>( OnLandOnGround );
 	}
 
 	T Actor { get; set; }

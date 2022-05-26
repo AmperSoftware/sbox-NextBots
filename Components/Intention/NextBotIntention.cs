@@ -4,14 +4,14 @@ namespace Amper.NextBot;
 
 public interface INextBotIntention { }
 
-public class NextBotIntention<T, U> : NextBotComponent, INextBotIntention where T : INextBot where U : NextBotAction<T>, new()
+public class NextBotIntention<Actor, InitialAction> : NextBotComponent, INextBotIntention where Actor : INextBot where InitialAction : NextBotAction<Actor>, new()
 {
-	NextBotBehavior<T> Behavior { get; set; }
-	T Me { get; set; }
+	NextBotBehavior<Actor> Behavior { get; set; }
+	Actor Me { get; set; }
 
 	public NextBotIntention( INextBot bot ) : base( bot )
 	{
-		Me = (T)bot;
+		Me = (Actor)bot;
 		Reset();
 	}
 
@@ -23,7 +23,7 @@ public class NextBotIntention<T, U> : NextBotComponent, INextBotIntention where 
 	public override void Reset()
 	{
 		Behavior?.Stop();
-		Behavior = new NextBotBehavior<T>( new U() );
+		Behavior = new NextBotBehavior<Actor>( new InitialAction() );
 	}
 
 	public override void OnEvent( NextBotEvent args )

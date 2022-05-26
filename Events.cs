@@ -6,7 +6,7 @@ public class NextBotEventKilled : NextBotEvent { }
 
 public class NextBotEventInjured : NextBotEvent
 {
-	public DamageInfo Info { get; set; }
+	public DamageInfo DamageInfo { get; set; }
 }
 
 public class NextBotEventMoveToSuccess : NextBotEvent
@@ -21,6 +21,8 @@ public class NextBotEventMoveToFailure : NextBotEvent
 
 public class NextBotEventStuck : NextBotEvent { }
 public class NextBotEventUnStuck : NextBotEvent { }
+public class NextBotEventLandOnGround : NextBotEvent { }
+public class NextBotEventLeaveGround : NextBotEvent { }
 
 public class NextBotEventSight : NextBotEvent
 {
@@ -31,3 +33,4 @@ public class NextBotEventLostSight : NextBotEvent
 {
 	public Entity Entity { get; set; }
 }
+

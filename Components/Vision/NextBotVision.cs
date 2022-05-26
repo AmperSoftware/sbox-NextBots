@@ -7,17 +7,41 @@ namespace Amper.NextBot;
 
 public interface INextBotVision
 {
-	public float GetDefaulFieldOfView();
+	/// <summary>
+	/// A list of all entities we're currently aware of.
+	/// </summary>
+	public IEnumerable<KnownEntity> KnownEntities { get; }
+	/// <summary>
+	/// Return the known information about an entity.
+	/// </summary>
+	public KnownEntity GetKnown( Entity entity );
+	/// <summary>
+	/// Alert the bot of this entity's presence. This will update our known position of the entity.
+	/// </summary>
+	public void AlertOfEntity( Entity entity );
 }
 
 public class NextBotVision : NextBotComponent, INextBotVision
 {
-
+	IEnumerable<KnownEntity> INextBotVision.KnownEntities => KnownEntities;
 	List<KnownEntity> KnownEntities { get; set; } = new();
+
 	float LastVisionUpdateTime { get; set; } = 0;
 	Entity PrimaryThreat { get; set; }
-	public float FOV { get; private set; }
+
+	public float FieldOfView 
+	{
+		get => FOV;
+		set
+		{
+			CosHalfFOV = MathF.Cos( 0.5f * value * MathF.PI / 180 );
+			FOV = value;
+		}
+	}
+
+	float FOV { get; set; }
 	float CosHalfFOV { get; set; }
+	public float DefaultFieldOfView { get; set; }
 
 	public NextBotVision( INextBot bot ) : base( bot )
 	{
@@ -32,7 +56,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		LastVisionUpdateTime = 0;
 		PrimaryThreat = null;
 
-		SetFieldOfView( GetDefaulFieldOfView() );
+		SetFieldOfView( DefaultFieldOfView );
 	}
 
 	public override void Update()
@@ -58,6 +82,23 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		}
 	}
 
+	/// <summary>
+	/// Given an entity, return our known version of it( or NULL if we don't know of it)
+	/// </summary>
+	public KnownEntity GetKnown( Entity entity )
+	{
+		if ( entity == null || !entity.IsValid )
+			return null;
+
+		foreach ( var known in KnownEntities )
+		{
+			if ( known.Entity == entity && !known.IsObsolete() )
+				return known;
+		}
+
+		return null;
+	}
+
 	public bool IsAwareOf( KnownEntity known )
 	{
 		return known.GetTimeSinceBecameKnown() > GetMinRecognizeTime();
@@ -70,7 +111,6 @@ public class NextBotVision : NextBotComponent, INextBotVision
 	}
 
 	public virtual float GetMinRecognizeTime() => 0;
-	public virtual float GetDefaulFieldOfView() => 90;
 	public virtual float GetMaxVisionRange() => 2000;
 	public virtual bool IsIgnored( Entity entity ) => false;
 
@@ -111,13 +151,15 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 	public bool IsInFieldOfView( Vector3 position )
 	{
-		return PointWithinViewAngle( Bot.NextBot.Body.GetEyePosition(), position, Bot.NextBot.Body.GetViewVector(), CosHalfFOV );
+		return PointWithinViewAngle( Bot.EyePosition, position, Bot.ViewVector, CosHalfFOV );
 	}
 
 	public bool IsLineOfSightClear( Entity subject, bool cheaper = false )
 	{
+		var eyePos = Bot.EyePosition;
+
 		// Try tracing to world space center
-		var tr = Trace.Ray( Bot.NextBot.Body.GetEyePosition(), subject.WorldSpaceBounds.Center )
+		var tr = Trace.Ray( eyePos, subject.WorldSpaceBounds.Center )
 			.Ignore( Bot.Entity )
 			.Ignore( subject )
 			.Run();
@@ -128,7 +170,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		// We hit something? Try tracing to eye position.
 		if ( tr.Hit )
 		{
-			tr = Trace.Ray( Bot.NextBot.Body.GetEyePosition(), subject.EyePosition )
+			tr = Trace.Ray( eyePos, subject.EyePosition )
 				.Ignore( Bot.Entity )
 				.Ignore( subject )
 				.Run();
@@ -136,7 +178,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 			// We hit something? Try tracing to abs position.
 			if ( tr.Hit )
 			{
-				tr = Trace.Ray( Bot.NextBot.Body.GetEyePosition(), subject.Position )
+				tr = Trace.Ray( eyePos, subject.Position )
 					.Ignore( Bot.Entity )
 					.Ignore( subject )
 					.Run();
@@ -153,7 +195,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 	public bool IsLineOfSightClear( Vector3 point, bool cheaper = false )
 	{
 		// Try tracing to world space center
-		var tr = Trace.Ray( Bot.NextBot.Body.GetEyePosition(), point )
+		var tr = Trace.Ray( Bot.EyePosition, point )
 			.Ignore( Bot.Entity )
 			.Run();
 
@@ -257,7 +299,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 					if ( NextBots.IsDebugging( NextBotDebugFlags.Vision ) )
 					{
 						NextBots.Msg( NextBotDebugFlags.Vision, $"[NextBot Vision] {Bot} caught sight of {known.Entity}" );
-						DebugOverlay.Line( Bot.NextBot.Body.GetEyePosition(), known.LastKnownPosition, Color.Yellow, 0.2f, false );
+						DebugOverlay.Line( Bot.EyePosition, known.LastKnownPosition, Color.Yellow, 0.2f, false );
 					}
 
 					Bot.NextBot.InvokeEvent( new NextBotEventSight { Entity = known.Entity } );
@@ -290,10 +332,62 @@ public class NextBotVision : NextBotComponent, INextBotVision
 				var pos = known.LastKnownPosition;
 				var color = known.IsVisible ? Color.Green : Color.Yellow;
 
-				DebugOverlay.Line( Bot.NextBot.Body.GetEyePosition(), pos, color, 0.1f );
+				DebugOverlay.Line( Bot.EyePosition, pos, color, 0.1f );
 				DebugOverlay.Sphere( pos, 5, color, 0.1f );
 			}
 		}
+	}
+
+	public virtual bool IsLookingAt( Vector3 pos, float cosTolerance = 0.95f )
+	{
+		var toPos = pos - Bot.EyePosition;
+		toPos = toPos.Normal;
+
+		var forward = Bot.ViewVector;
+
+		return toPos.Dot( forward ) > cosTolerance;
+	}
+
+	public virtual bool IsLookingAt( Entity pos, float cosTolerance = 0.95f )
+	{
+		return IsLookingAt( pos, cosTolerance );
+	}
+
+	public virtual void AlertOfEntity( Entity entity )
+	{
+		// We cant remember this 
+		if ( entity == null || !entity.IsValid || entity.IsWorld )
+			return;
+
+		// If we already know this entity, just update its position.
+		var known = KnownEntities.Find( x => x.Entity == entity );
+		if ( known != null )
+		{
+			known.UpdatePosition();
+			return;
+		}
+
+		// Otherwise add it to the list.
+		KnownEntities.Add( new KnownEntity( entity ) );
+	}
+
+	public virtual void ForgetEntity( Entity entity )
+	{
+		for ( var i = 0; i < KnownEntities.Count; i++ )
+		{
+			var known = KnownEntities[i];
+
+			if ( known.Entity == entity ) 
+			{
+				KnownEntities.RemoveAt( i );
+				return;
+			}
+		}
+	}
+
+	public virtual void ForgetAllKnownEntities()
+	{
+		KnownEntities.Clear();
 	}
 
 	[ConVar.Server] public static bool nb_blind { get; set; } = false;

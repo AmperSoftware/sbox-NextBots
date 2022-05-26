@@ -4,6 +4,7 @@ namespace Amper.NextBot;
 
 public interface INextBotComponent
 {
+	public void Upkeep();
 	public void Update();
 	public void Reset();
 }
@@ -62,6 +63,7 @@ public abstract partial class NextBotComponent : INextBotComponent
 		return true;
 	}
 
-	public virtual void Update() { } 
+	public virtual void Upkeep() { }
+	public virtual void Update() { }
 	public virtual void Reset() { }
 }

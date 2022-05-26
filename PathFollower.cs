@@ -117,7 +117,6 @@ if ( m_goal->type == CLIMB_UP )
 		// correct the sideways vector
 		left = left.Cross( normal );
 
-
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Path ) )
 		{
 			var axisSize = 25;
@@ -142,7 +141,6 @@ if ( m_goal->type == CLIMB_UP )
 	public bool Climbing( INextBot bot, NavNode goal, Vector3 forward, Vector3 left, float goalRange )
 	{
 		var mover = bot.NextBot.Locomotion;
-		var body = bot.NextBot.Body;
 		
 		// Check if we're allowed to climb.
 		if ( !mover.IsAbleToClimb() || !nb_allow_climbing )
@@ -156,7 +154,7 @@ if ( m_goal->type == CLIMB_UP )
 
 		// we can't have this as large as our hull width, or we'll find ledges ahead of us
 		// that we will fall from when we climb up because our hull wont actually touch at the top.
-		float ledgeLookAheadRange = body.GetHullWidth() - 1;
+		float ledgeLookAheadRange = bot.WorldSpaceBounds.Size.x - 1;
 
 		// Disabled until s&box's NavMesh gives up proper ClimbUp attribute.
 #if false

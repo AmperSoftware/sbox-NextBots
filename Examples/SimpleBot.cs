@@ -7,60 +7,82 @@ namespace Amper.NextBot;
 public partial class SimpleBot : AnimatedEntity, INextBot
 {
 	public NextBotController NextBot { get; set; }
-	public Entity Target { get; set; }
 
 	public override void Spawn()
 	{
 		base.Spawn();
 
+		SetModel( "models/citizen/citizen.vmdl" );
+		EyeLocalPosition = Vector3.Up * 64;
+		Health = 100;
+
+		EnableAllCollisions = true;
+		EnableHitboxes = true;
+		SetupPhysicsFromAABB( PhysicsMotionType.Keyframed, new Vector3( -24, -24, 0 ), new Vector3( 24, 24, 72 ) );
+
 		NextBot = new( this )
 		{
-			Locomotion = new NextBotLocomotion( this ),
 			Vision = new NextBotVision( this ),
-			Intention = new NextBotIntention<SimpleBot, SimpleBotIdle>( this )
+			Animator = new NextBotAnimator( this ),
+			Locomotion = new NextBotGroundLocomotion( this )
+			{
+				DesiredSpeed = 240
+			},
+			Intention = new NextBotIntention<SimpleBot, SimpleBotBehavior>( this )
 		};
+	}
 
-
-		SetModel( "models/bots/demo/bot_sentry_buster.vmdl" );
-		Scale = 1.5f;
+	public override void TakeDamage( DamageInfo info )
+	{
+		base.TakeDamage( info );
+		NextBot?.InvokeEvent( new NextBotEventInjured { DamageInfo = info } );
 	}
 }
 
-public class SimpleBotIdle : NextBotAction<SimpleBot>
+public class SimpleBotBehavior : NextBotAction<SimpleBot>
 {
-	public override ActionResult<SimpleBot> OnStart( SimpleBot me, NextBotAction<SimpleBot> priorAction = null )
-	{
-		return Continue();
-	}
+	Entity Target;
+
+	CountdownTimer repathTimer = new();
+	NextBotPathFollower Path = new();
 
 	public override ActionResult<SimpleBot> Update( SimpleBot me, float interval )
 	{
-		var ent = Entity.FindInSphere( me.Position, 500 ).FirstOrDefault( x => x is Player && x.Position.Distance( me.Position ) <= 500 );
-
-		if ( ent != null )
+		// We don't have target, do nothing.
+		if ( Target == null )
 		{
-			me.Target = ent;
-			return SuspendFor( new SimpleBotLook(), "I am seeing someone!" );
+			// first entity we're aware of we will follow.
+			var firstKnown = me.NextBot.Vision.KnownEntities.FirstOrDefault();
+			if ( firstKnown != null )
+			{
+				Target = firstKnown.Entity;
+			}
+
+			if ( Target == null )
+				return Continue();
 		}
 
-		return Continue();
-	}
-}
+		var known = me.NextBot.Vision.GetKnown( Target );
+		if ( known == null )
+		{
+			// Forget about the entity.
+			Target = null;
+			return Continue();
+		}
 
-public class SimpleBotLook : NextBotAction<SimpleBot>
-{
-	public override ActionResult<SimpleBot> OnStart( SimpleBot me, NextBotAction<SimpleBot> priorAction = null )
-	{
-		return Continue();
-	}
+		if ( me.NextBot.IsRangeGreaterThan( Target, 100 ) )
+		{
+			if ( repathTimer.IsElapsed() )
+			{
+				Path.Build( me, known.LastKnownPosition );
+				repathTimer.Start( Rand.Float( .2f, .4f ) );
+			}
 
-	public override ActionResult<SimpleBot> Update( SimpleBot me, float interval )
-	{
-		if ( me.Target == null )
-			return Done( "My target doesn't exist anymore." );
+			Path.Update( me );
+		}
 
-		if ( me.Position.Distance( me.Target.Position ) > 500 )
-			return Done( "My target is too far away." );
+
+		me.NextBot.Locomotion.FaceTowards( known.LastKnownPosition + known.Entity.EyeLocalPosition );
 
 		return Continue();
 	}

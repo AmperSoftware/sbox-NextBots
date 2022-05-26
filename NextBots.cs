@@ -48,7 +48,10 @@ public partial class NextBots
 
 		// update all bots
 		foreach ( var bot in Bots )
+		{
+			bot.Upkeep();
 			bot.Update();
+		}
 	}
 
 	void PurgeDeletedBots()

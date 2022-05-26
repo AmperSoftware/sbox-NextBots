@@ -7,14 +7,15 @@ public partial class NextBotController : IValid
 	public INextBot Bot { get; private set; }
 
 	public NextBotComponent FirstComponent { get; set; }
+
 	public INextBotLocomotion Locomotion { get; set; }
 	public INextBotIntention Intention { get; set; }
 	public INextBotVision Vision { get; set; }
-	public INextBotBody Body { get; set; }
+	public INextBotAnimator Animator { get; set; }
 
 	public NextBotPathFollower Path { get; set; }
 
-	public float LastUpdateTime { get; set; }
+	float LastUpdateTime { get; set; }
 	int DisplayDebugLine { get; set; }
 
 	public NextBotController( INextBot bot )
@@ -49,6 +50,15 @@ public partial class NextBotController : IValid
 		LastUpdateTime = Time.Now;
 	}
 
+	public void Upkeep()
+	{
+		// upkeep all components
+		for ( var comp = FirstComponent; comp != null; comp = comp.NextComponent )
+		{
+			comp.Upkeep();
+		}
+	}
+
 	public void Reset()
 	{
 		LastUpdateTime = -999;
@@ -65,7 +75,7 @@ public partial class NextBotController : IValid
 			return;
 
 		var origin = entity.WorldSpaceBounds.Center;
-		DebugOverlay.Text( text, origin, DisplayDebugLine++, Color.White, 0.1f );
+		DebugOverlay.Text( text, origin, DisplayDebugLine++, Color.White, Time.Now - LastUpdateTime );
 	}
 
 	public bool IsRangeLessThan( Entity subject, float range )
@@ -96,6 +106,10 @@ public partial class NextBotController : IValid
 	{
 		return Bot.Position.Distance( pos );
 	}
+
+	public virtual bool IsEnemy( Entity entity ) => false;
+
+	public virtual bool IsFriend( Entity entity ) => true;
 
 	public bool IsValid => Bot != null && Bot.IsValid;
 }

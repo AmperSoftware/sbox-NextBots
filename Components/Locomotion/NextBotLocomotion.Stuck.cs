@@ -2,72 +2,8 @@
 
 namespace Amper.NextBot;
 
-public interface INextBotLocomotion : INextBotComponent
+partial class NextBotLocomotion
 {
-	/// <summary>
-	/// Move directly towards the given position
-	/// </summary>
-	public void Approach( Vector3 point, float goalWeigth = 1 );
-	public void Jump();
-
-	public Vector3 Avoid( Vector3 point );
-
-	public Vector3 GetGroundNormal();
-	public Vector3 GetFeet();
-	public float GetDesiredSpeed();
-
-	public bool IsClimbingOrJumping();
-	public bool IsAscendingOrDescendingLadder();
-	public bool IsAbleToClimb();
-	public bool IsOnGround();
-
-	public void ClearStuckStatus( string reason );
-
-	public bool IsStuck { get; set; }
-}
-
-public class NextBotLocomotion : NextBotComponent, INextBotLocomotion
-{
-	public NextBotLocomotion( INextBot me ) : base( me ) { }
-
-	public override void Update()
-	{
-		StuckMonitor();
-
-		if ( NextBots.IsDebugging( NextBotDebugFlags.Locomotion ) )
-		{
-			Bot.NextBot.DisplayDebugText( "Locomotion: " );
-			Bot.NextBot.DisplayDebugText( $"- Stuck: {IsStuck}" );
-			Bot.NextBot.DisplayDebugText( $"- Time Since Stuck: {TimeSinceStuck}" );
-			Bot.NextBot.DisplayDebugText( $"- Time Since Move Requested: {TimeSinceMoveRequested}" );
-		}
-	}
-
-	TimeSince TimeSinceMoveRequested { get; set; }
-
-	public virtual void Approach( Vector3 point, float goalWeigth = 1 )
-	{
-		TimeSinceMoveRequested = 0;
-	}
-
-	public virtual void Jump() { }
-
-	public virtual Vector3 Avoid( Vector3 point ) => point;
-
-
-	public virtual Vector3 GetFeet() => Bot.Entity.Position;
-	public virtual Vector3 GetGroundNormal() => Vector3.Up;
-	public virtual float GetDesiredSpeed() => 0;
-
-	public virtual bool IsClimbingOrJumping() => false;
-	public virtual bool IsAscendingOrDescendingLadder() => false;
-	public virtual bool IsAbleToClimb() => true;
-	public virtual bool IsOnGround() => Bot.Entity.GroundEntity != null;
-
-	//
-	// Stuck
-	// 
-
 	public const float StuckRadius = 100;
 	TimeSince TimeSinceStuck { get; set; }
 	Vector3 StuckPosition { get; set; }
