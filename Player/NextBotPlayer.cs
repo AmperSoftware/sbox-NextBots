@@ -1,4 +1,6 @@
 ﻿using Sandbox;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Amper.NextBot;
 
@@ -35,5 +37,30 @@ public abstract partial class NextBotPlayer : Bot
 			Bot.NextBot.BuildInput( builder );
 
 		base.BuildInput( builder );
+	}
+
+	[ConCmd.Admin( "bot_teleport" )]
+	public static void Command_BotTeleport( string who )
+	{
+		if ( ConsoleSystem.Caller.Pawn is Entity player )
+		{
+			var all = Client.All.Where( x => x.IsBot ).Select( x => x.Pawn );
+			IEnumerable<Entity> targets = null;
+
+			if ( who == "all" ) targets = all;
+
+			var tr = Trace.Ray( player.EyePosition, player.EyePosition + player.EyeRotation.Forward * 1000 )
+				.Radius( 2 )
+				.WithoutTags( "player" )
+				.Run();
+
+			if ( tr.Hit && targets != null )
+			{
+				foreach ( var bot in targets )
+				{
+					bot.Position = tr.EndPosition;
+				}
+			}
+		}
 	}
 }

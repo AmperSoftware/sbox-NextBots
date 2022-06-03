@@ -19,6 +19,9 @@ public interface INextBotVision
 	/// Alert the bot of this entity's presence. This will update our known position of the entity.
 	/// </summary>
 	public void AlertOfEntity( Entity entity );
+
+	public bool IsLineOfSightClear( Entity entity, bool cheaper = false );
+	public bool IsLineOfSightClear( Vector3 point );
 }
 
 /// <summary>
@@ -44,7 +47,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 	float FOV { get; set; }
 	float CosHalfFOV { get; set; }
-	public float DefaultFieldOfView { get; set; }
+	public float DefaultFieldOfView { get; set; } = 90;
 
 	public NextBotVision( INextBot bot ) : base( bot )
 	{
@@ -77,6 +80,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		{
 			Bot.NextBot.DisplayDebugText( "Vision:" );
 
+			Bot.NextBot.DisplayDebugText( $"- FOV: {FOV}°" );
 			Bot.NextBot.DisplayDebugText( "- Known Entities: " );
 			foreach ( var known in KnownEntities )
 			{
@@ -195,7 +199,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		return true;
 	}
 
-	public bool IsLineOfSightClear( Vector3 point, bool cheaper = false )
+	public bool IsLineOfSightClear( Vector3 point )
 	{
 		// Try tracing to world space center
 		var tr = Trace.Ray( Bot.EyePosition, point )
@@ -221,14 +225,10 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 	public IEnumerable<Entity> CollectPotentiallyVisibleEntities()
 	{
-		// Notice player pawns.
-		var players = Entity.All.OfType<Player>();
+		// Notice INextBots
+		var players = Entity.All.OfType<INextBot>().OfType<Entity>();
 		foreach ( var player in players )
 			yield return player;
-
-		// Notice NextBots
-		foreach ( var bot in NextBots.Current.Bots )
-			yield return bot.Bot.Entity;
 	}
 
 	public IEnumerable<Entity> CollectVisibleEntities()

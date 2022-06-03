@@ -46,6 +46,26 @@ public class NextBotPlayerLocomotion : NextBotLocomotion
 		}
 
 		var toPoint = (point - GetFeet()).WithZ( 0 ).Normal;
-		input.AnalogMove( toPoint );
+
+		var forward = Bot.EyeRotation.Forward;
+		var left = Bot.EyeRotation.Left;
+
+		var fmove = forward.Dot( toPoint );
+		var smove = left.Dot( toPoint );
+
+		input.AnalogMove( new Vector3( fmove, smove, 0 ) );
+	}
+
+	public override void FaceTowards( Vector3 target )
+	{
+		var input = Bot.NextBot as INextBotPlayerInput;
+		if ( input == null )
+		{
+			Log.Error( "NextBotPlayerLocomotion::Approach: No INextBotPlayerInput" );
+			return;
+		}
+
+		var toTarget = (target - Bot.EyePosition).Normal;
+		input.FaceTowards( Rotation.LookAt( toTarget ) );
 	}
 }

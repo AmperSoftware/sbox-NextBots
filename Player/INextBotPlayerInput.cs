@@ -8,10 +8,12 @@ public interface INextBotPlayerInput
 	public void ReleaseInputButton( InputButton button );
 
 	public void AnalogMove( Vector3 vector, float duration = -1 );
+	public void FaceTowards( Rotation rotation );
 }
 
 public struct NextBotInput
 {
 	public InputButton Buttons;
 	public Vector3 AnalogMove;
+	public Rotation Rotation;
 }
