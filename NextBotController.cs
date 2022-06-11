@@ -78,7 +78,7 @@ public partial class NextBotController : IValid
 			return;
 
 		var origin = entity.WorldSpaceBounds.Center;
-		DebugOverlay.Text( text, origin, DisplayDebugLine++, Color.White, Time.Now - LastUpdateTime );
+		DebugOverlay.Text( text, origin, DisplayDebugLine++, Color.White, NextBots.nb_update_frequency );
 	}
 
 	public bool IsRangeLessThan( Entity subject, float range )

@@ -19,6 +19,7 @@ public interface INextBotVision
 	/// Alert the bot of this entity's presence. This will update our known position of the entity.
 	/// </summary>
 	public void AlertOfEntity( Entity entity );
+	public void SetFieldOfView( float fov );
 
 	public bool IsLineOfSightClear( Entity entity, bool cheaper = false );
 	public bool IsLineOfSightClear( Vector3 point );
