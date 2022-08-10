@@ -23,6 +23,8 @@ public interface INextBotVision
 
 	public bool IsLineOfSightClear( Entity entity, bool cheaper = false );
 	public bool IsLineOfSightClear( Vector3 point );
+
+	public KnownEntity GetPrimaryKnownThreat( bool onlyVisibleThreats = false );
 }
 
 /// <summary>
@@ -399,5 +401,51 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		KnownEntities.Clear();
 	}
 
+	public virtual KnownEntity GetPrimaryKnownThreat( bool onlyVisibleThreats = false )
+	{
+		if ( !KnownEntities.Any() )
+			return null;
+
+		KnownEntity threat = null;
+
+		// find the first valid entity
+		foreach ( var firstThreat in KnownEntities )
+		{
+			// check in case status changes between updates
+			if ( IsAwareOf( firstThreat ) && !firstThreat.IsObsolete() && !IsIgnored( firstThreat.Entity ) && Bot.NextBot.IsEnemy( firstThreat.Entity ) )
+			{
+				if ( !onlyVisibleThreats || firstThreat.IsVisibleRecently() )
+				{
+					threat = firstThreat;
+					break;
+				}
+			}
+		}
+
+		if ( threat == null )
+		{
+			PrimaryThreat = null;
+			return null;
+		}
+
+		// find the first valid entity
+		foreach ( var newThreat in KnownEntities )
+		{
+			// check in case status changes between updates
+			if ( IsAwareOf( newThreat ) && !newThreat.IsObsolete() && !IsIgnored( newThreat.Entity ) && Bot.NextBot.IsEnemy( newThreat.Entity ) )
+			{
+				if ( !onlyVisibleThreats || newThreat.IsVisibleRecently() )
+				{
+					threat = Bot.NextBot.InvokeQuery( new NextBotQuerySelectMoreDangerousThreat( newThreat, threat ) );
+				}
+			}
+		}
+
+		PrimaryThreat = threat?.Entity;
+		return threat;
+	}
+
 	[ConVar.Server] public static bool nb_blind { get; set; } = false;
 }
+
+public delegate void NextboTCringe<T, U>( T args, ref U retval ) where T : NextBotContextualQuery<U>;

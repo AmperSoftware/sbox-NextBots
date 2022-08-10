@@ -1,6 +1,8 @@
-﻿namespace Amper.NextBot;
+﻿using System;
 
-public partial class NextBotAction<T> where T : INextBot
+namespace Amper.NextBot;
+
+public partial class NextBotAction<T> : INextBotEventResponder where T : INextBot
 {
 	/// <summary>
 	/// The action that we are currently suspending.
@@ -278,6 +280,9 @@ public partial class NextBotAction<T> where T : INextBot
 	}
 
 	public override string ToString() => GetType().Name;
+
+	public INextBotEventResponder FirstContainedResponder() => Child;
+	public INextBotEventResponder NextContainedResponder( INextBotEventResponder current ) => null;
 }
 
 public abstract class IActionResult<T> where T : INextBot

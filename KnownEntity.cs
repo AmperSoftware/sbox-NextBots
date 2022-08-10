@@ -86,6 +86,11 @@ public class KnownEntity : IEquatable<KnownEntity>
 		return Entity == null || !Entity.IsValid || Entity.LifeState != LifeState.Alive || GetTimeSinceLastKnown() > 10;
 	}
 
+	public virtual bool IsVisibleInFOVNow()
+	{
+		return IsVisible;
+	}
+
 	public virtual bool IsVisibleRecently()
 	{
 		if ( IsVisible )

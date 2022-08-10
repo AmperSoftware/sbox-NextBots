@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Amper.NextBot;
 
-public abstract partial class NextBotComponent : INextBotEventReceiver
+public abstract partial class NextBotComponent
 {
 	public Dictionary<Type, NextBotComponentEventDelegate> EventSubscriptions = new();
 
@@ -25,8 +25,3 @@ public abstract partial class NextBotComponent : INextBotEventReceiver
 
 
 public delegate void NextBotComponentEventDelegate( NextBotEvent args );
-
-public interface INextBotEventReceiver
-{
-	public void OnEvent( NextBotEvent args );
-}

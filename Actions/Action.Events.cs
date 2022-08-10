@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Amper.NextBot;
 
-partial class NextBotAction<T> : INextBotEventReceiver
+partial class NextBotAction<T> 
 {
 	Dictionary<Type, NextBotActionEventDelegate<T>> EventSubscriptions = new();
 
@@ -37,7 +37,7 @@ partial class NextBotAction<T> : INextBotEventReceiver
 	public void SubscribeToEvent<U>( NextBotActionEventCallback<T, U> callback ) where U: NextBotEvent
 	{
 		var typeHint = typeof( U );
-		EventSubscriptions[typeHint] = ( me, args ) => callback( (T)me, (U)args );
+		EventSubscriptions[typeHint] = ( me, args ) => callback( me, (U)args );
 	}
 
 	protected EventDesiredResult<T> InvokeEventDelegate( NextBotEvent args )

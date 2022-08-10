@@ -17,8 +17,17 @@ partial class NextBotController
 	/// </summary>
 	public void InvokeEvent( NextBotEvent invokedEvent ) 
 	{
-		for ( var comp = FirstComponent; comp != null; comp = comp.NextComponent ) 
-			comp.OnEvent( invokedEvent );
+		InvokeEvent( this, invokedEvent );
+	}
+
+	private void InvokeEvent( INextBotEventResponder parent, NextBotEvent args )
+	{
+		parent.OnEvent( args );
+
+		for ( var sub = parent.FirstContainedResponder(); sub != null; sub = parent.NextContainedResponder( sub ) )
+		{
+			InvokeEvent( sub, args );
+		}
 	}
 }
 

@@ -3,7 +3,7 @@
 public interface INextBotIntention { }
 
 /// <summary>
-/// This is the intention interface for the bot. It contains one more multiple behaviors.
+/// This is the intention interface for the bot. It contains one or more multiple behaviors.
 /// </summary>
 public class NextBotIntention<Actor, InitialAction> : NextBotComponent, INextBotIntention where Actor : INextBot where InitialAction : NextBotAction<Actor>, new()
 {
@@ -27,10 +27,5 @@ public class NextBotIntention<Actor, InitialAction> : NextBotComponent, INextBot
 		Behavior = new NextBotBehavior<Actor>( new InitialAction() );
 	}
 
-	public override void OnEvent( NextBotEvent args )
-	{
-		base.OnEvent( args );
-		Behavior?.OnEvent( args );
-	}
-
+	public override INextBotEventResponder FirstContainedResponder() => Behavior;
 }

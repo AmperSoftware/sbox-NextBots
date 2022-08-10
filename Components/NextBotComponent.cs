@@ -1,4 +1,5 @@
 ﻿using Sandbox;
+using System;
 
 namespace Amper.NextBot;
 
@@ -9,7 +10,7 @@ public interface INextBotComponent
 	public void Reset();
 }
 
-public abstract partial class NextBotComponent : INextBotComponent
+public abstract partial class NextBotComponent : INextBotComponent, INextBotEventResponder
 {
 	public float LastUpdateTime { get; protected set; }
 	public float CurrentInterval { get; protected set; }
@@ -66,4 +67,7 @@ public abstract partial class NextBotComponent : INextBotComponent
 	public virtual void Upkeep() { }
 	public virtual void Update() { }
 	public virtual void Reset() { }
+
+	public virtual INextBotEventResponder FirstContainedResponder() => null;
+	public virtual INextBotEventResponder NextContainedResponder( INextBotEventResponder current ) => null;
 }

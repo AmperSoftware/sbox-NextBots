@@ -1,11 +1,13 @@
-﻿namespace Amper.NextBot;
+﻿using System;
+
+namespace Amper.NextBot;
 
 public interface INextBotBehavior { }
 
 /// <summary>
 /// This is the behavior of our bot, it manages Actions that define what the bot is doing.
 /// </summary>
-public class NextBotBehavior<T> : INextBotEventReceiver where T :  INextBot
+public class NextBotBehavior<T> : INextBotEventResponder where T : INextBot
 {
 	T Me { get; set; }
 	NextBotAction<T> Action { get; set; }
@@ -27,11 +29,6 @@ public class NextBotBehavior<T> : INextBotEventReceiver where T :  INextBot
 
 		if ( Action != null && NextBots.IsDebugging( NextBotDebugFlags.Behavior ) )
 			PrintDebug();
-	}
-
-	public void OnEvent( NextBotEvent args )
-	{
-		Action?.OnEvent( args );
 	}
 
 	public void Stop()
@@ -76,4 +73,10 @@ public class NextBotBehavior<T> : INextBotEventReceiver where T :  INextBot
 		}
 		while ( action != null );
 	}
+
+	public INextBotEventResponder FirstContainedResponder() => Action;
+	public INextBotEventResponder NextContainedResponder( INextBotEventResponder current ) => null;
+
+	public void OnEvent( NextBotEvent args ) { }
+	public ResponseType OnQuery<ResponseType>( NextBotContextualQuery<ResponseType> args ) => default;
 }

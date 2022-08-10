@@ -1,11 +1,12 @@
 ﻿using Sandbox;
+using System;
 
 namespace Amper.NextBot;
 
 /// <summary>
 /// This is the mind of our nextbot, it manages all the components.
 /// </summary>
-public partial class NextBotController : IValid
+public partial class NextBotController : IValid, INextBotEventResponder
 {
 	public INextBot Bot { get; private set; }
 
@@ -111,8 +112,13 @@ public partial class NextBotController : IValid
 	}
 
 	public virtual bool IsEnemy( Entity entity ) => false;
+	public virtual bool IsFriend( Entity entity ) => !IsEnemy( entity );
 
-	public virtual bool IsFriend( Entity entity ) => true;
+	public INextBotEventResponder FirstContainedResponder() => FirstComponent;
+	public INextBotEventResponder NextContainedResponder( INextBotEventResponder current ) => ((NextBotComponent)current).NextComponent;
+
+	public void OnEvent( NextBotEvent args ) { }
+	public ResponseType OnQuery<ResponseType>( NextBotContextualQuery<ResponseType> args ) => default;
 
 	public bool IsValid => Bot != null && Bot.IsValid;
 }
