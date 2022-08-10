@@ -226,10 +226,15 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 	public IEnumerable<Entity> CollectPotentiallyVisibleEntities()
 	{
+		// Notice player pawns.
+		var pawns = Client.All.Select( x => x.Pawn );
+		foreach ( var pawn in pawns )
+			yield return pawn;
+
 		// Notice INextBots
-		var players = Entity.All.OfType<INextBot>().OfType<Entity>();
-		foreach ( var player in players )
-			yield return player;
+		var bots = Entity.All.OfType<INextBot>().OfType<Entity>();
+		foreach ( var bot in bots )
+			yield return bot;
 	}
 
 	public IEnumerable<Entity> CollectVisibleEntities()

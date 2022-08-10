@@ -5,7 +5,8 @@ namespace Amper.NextBot;
 
 public class NextBotPathFollower : IValid
 {
-	public List<NavNode> Nodes { get; private set; } = new();
+	public NavPath Path { get; set; }
+	public List<NavPathSegment> Nodes { get; private set; } = new();
 	public int TargetNodeIndex { get; private set; } = 0;
 
 	/// <summary>
@@ -27,7 +28,10 @@ public class NextBotPathFollower : IValid
 		Invalidate();
 		var start = bot.Position;
 
-		var pathResult = NavMesh.BuildPathEx( start, goal, Nodes );
+		var agentPath = NavMesh.PathBuilder( start )
+			.Build( goal );
+
+		Nodes = agentPath.Segments;
 
 		// We always need to have at least two nodes - end and start.
 		if ( Nodes.Count < 2 )
@@ -40,7 +44,7 @@ public class NextBotPathFollower : IValid
 		TargetNodeIndex = 1;
 		NextBots.Msg( NextBotDebugFlags.Path, $"Path built for {bot}." );
 
-		return pathResult && IsValid;
+		return IsValid;
 	}
 
 	public void Invalidate()
@@ -68,7 +72,7 @@ public class NextBotPathFollower : IValid
 
 		var mover = bot.NextBot.Locomotion;
 
-		var goalNode = GetTargetNode().Value;
+		var goalNode = GetTargetNode();
 		var goalPos = goalNode.Position;
 
 		var forward = goalNode.Position - mover.GetFeet();
@@ -139,7 +143,7 @@ if ( m_goal->type == CLIMB_UP )
 		bot.NextBot.Locomotion.Approach( goalPos );
 	}
 
-	public bool Climbing( INextBot bot, NavNode goal, Vector3 forward, Vector3 left, float goalRange )
+	public bool Climbing( INextBot bot, NavPathSegment goal, Vector3 forward, Vector3 left, float goalRange )
 	{
 		var mover = bot.NextBot.Locomotion;
 		
@@ -190,13 +194,11 @@ if ( m_goal->type == CLIMB_UP )
 	{
 		foreach ( var segment in Nodes )
 		{
-			DebugOverlay.Line( segment.Position, segment.Position + segment.Direction * segment.Length, Color.Yellow, 0.1f, false );
+			DebugOverlay.Line( segment.Position, segment.Position + segment.Forward * segment.Length, Color.Yellow, 0.1f, false );
 			DebugOverlay.Sphere( segment.Position, 2, Color.Blue, 0.1f , false);
 			DebugOverlay.Text(
-				$"Segment Type: {segment.SegmentType}\n" +
-				$"Area Flags: {segment.AreaFlags}\n" +
-				$"Previous Flags: {segment.PreviousAreaFlags}\n" +
-				$"Enter Type: {segment.EnterType}",
+				$"How: {segment.How}\n" +
+				$"SegmentType: {segment.SegmentType}\n",
 			segment.Position, 0.1f );
 		}
 
@@ -305,7 +307,7 @@ if ( m_goal->type == CLIMB_UP )
 		if ( currentNode == null )
 			return true;
 
-		var targetNode = GetTargetNode().Value;
+		var targetNode = GetTargetNode();
 		var toGoal = targetNode.Position - mover.GetFeet();
 
 #if false
@@ -355,7 +357,7 @@ if ( m_goal->type == CLIMB_UP )
 		return false;
 	}
 
-	public NavNode? GetNode( int index )
+	public NavPathSegment GetNode( int index )
 	{
 		if ( index < 0 || index >= Nodes.Count )
 			return null;
@@ -363,9 +365,9 @@ if ( m_goal->type == CLIMB_UP )
 		return Nodes[index];
 	}
 
-	public NavNode? GetPriorNode() => GetNode( TargetNodeIndex - 1 );
-	public NavNode? GetTargetNode() => GetNode( TargetNodeIndex );
-	public NavNode? GetNextNode() => GetNode( TargetNodeIndex + 1 );
+	public NavPathSegment GetPriorNode() => GetNode( TargetNodeIndex - 1 );
+	public NavPathSegment GetTargetNode() => GetNode( TargetNodeIndex );
+	public NavPathSegment GetNextNode() => GetNode( TargetNodeIndex + 1 );
 
 	public bool IsValid => Nodes.Count > 0;
 

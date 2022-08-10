@@ -117,12 +117,20 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 	{
 		return Trace.Ray( start, end )
 			.Size( mins, maxs )
-			.HitLayer( CollisionLayer.All, false )
-			.HitLayer( CollisionLayer.Solid, true )
-			.HitLayer( CollisionLayer.GRATE, true )
-			.HitLayer( CollisionLayer.PLAYER_CLIP, true )
-			.HitLayer( CollisionLayer.WINDOW, true )
-			.HitLayer( CollisionLayer.SKY, true )
+
+			// Collides with:
+			.WithAnyTags( CollisionTags.Solid )
+			.WithAnyTags( CollisionTags.Ladder )
+			.WithAnyTags( CollisionTags.Player )
+			.WithAnyTags( CollisionTags.Clip )
+			.WithAnyTags( CollisionTags.NPCClip )
+
+			// Doesn't collide with:
+			.WithoutTags( CollisionTags.NotSolid )
+			.WithoutTags( CollisionTags.Debris )
+			.WithoutTags( CollisionTags.Weapon )
+			.WithoutTags( CollisionTags.Projectile )
+
 			.Ignore( Bot.Entity );
 	}
 
