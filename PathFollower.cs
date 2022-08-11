@@ -31,6 +31,9 @@ public class NextBotPathFollower : IValid
 		var agentPath = NavMesh.PathBuilder( start )
 			.Build( goal );
 
+		if ( agentPath.TotalLength <= 0 )
+			return false;
+
 		Nodes = agentPath.Segments;
 
 		// We always need to have at least two nodes - end and start.
