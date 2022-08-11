@@ -2,12 +2,27 @@
 
 namespace Amper.NextBot;
 
-public class NextBotPlayerLocomotion : NextBotLocomotion
+public partial class NextBotPlayerLocomotion : NextBotLocomotion
 {
 	public NextBotPlayerLocomotion( INextBot me ) : base( me ) { }
 
 	bool IsJumping = false;
 	CountdownTimer JumpTimer = new();
+
+	public override void Reset()
+	{
+		LookAtPosition = 0;
+		LookAtSubject = null;
+		LookAtVelocity = 0;
+		LookAtPriority = LookAtPriorityType.Boring;
+
+		LookAtExpireTimer.Invalidate();
+		LookAtDurationTimer.Invalidate();
+		HeadSteadyTimer.Invalidate();
+
+		IsSightedIn = false;
+		HasBeenSightedIn = false;
+	}
 
 	public override void Jump()
 	{

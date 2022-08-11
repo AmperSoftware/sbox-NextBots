@@ -6,7 +6,7 @@ partial class NextBotController
 {
 	public T InvokeQuery<T>( NextBotContextualQuery<T> args )
 	{
-		var preAnswer = args.OnPreInvocation();
+		var preAnswer = args.OnPreInvocation( Bot );
 		if ( !Equals( preAnswer, default( T ) ) )
 			return preAnswer;
 
@@ -14,7 +14,7 @@ partial class NextBotController
 		if ( !Equals( answer, default( T ) ) )
 			return answer;
 
-		var postAnswer = args.OnPostInvocation();
+		var postAnswer = args.OnPostInvocation( Bot );
 		if ( !Equals( postAnswer, default( T ) ) )
 			return postAnswer;
 
@@ -42,8 +42,8 @@ public interface INextBotContextualQuery { }
 
 public abstract class NextBotContextualQuery<T> : INextBotContextualQuery
 {
-	public virtual T OnPreInvocation() => default( T );
-	public virtual T OnPostInvocation() => default( T );
+	public virtual T OnPreInvocation( INextBot me ) => default( T );
+	public virtual T OnPostInvocation( INextBot me ) => default( T );
 }
 
 public enum QueryResultType 

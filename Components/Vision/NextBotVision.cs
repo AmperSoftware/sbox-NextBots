@@ -84,6 +84,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 			Bot.NextBot.DisplayDebugText( "Vision:" );
 
 			Bot.NextBot.DisplayDebugText( $"- FOV: {FOV}°" );
+			Bot.NextBot.DisplayDebugText( $"- Primary Threat: {PrimaryThreat}" );
 			Bot.NextBot.DisplayDebugText( "- Known Entities: " );
 			foreach ( var known in KnownEntities )
 			{

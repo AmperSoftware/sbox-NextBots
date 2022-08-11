@@ -43,9 +43,34 @@ public interface INextBotLocomotion : INextBotComponent
 	public bool IsAbleToClimb();
 	public bool IsOnGround();
 
-	public void ClearStuckStatus( string reason );
+	public void AimHeadTowards( Vector3 lookAtPos, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
+	public void AimHeadTowards( Entity subject, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
 
+	public void ClearStuckStatus( string reason );
 }
+
+
+public enum LookAtPriorityType
+{
+	Boring,
+	/// <summary>
+	/// Last known enemy location, dangerous sound location
+	/// </summary>
+	Interesting,
+	/// <summary>
+	/// A danger
+	/// </summary>
+	Important,
+	/// <summary>
+	/// An active threat to our safety
+	/// </summary>
+	Critical,
+	/// <summary>
+	/// Nothing can interrupt this look at - two simultaneous look ats with this priority is an error
+	/// </summary>
+	Mandatory
+};
+
 
 /// <summary>
 /// This is the locomotion interface. This define how bot moves around in the world.
@@ -65,13 +90,29 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Locomotion ) )
 		{
-			Bot.NextBot.DisplayDebugText( "Locomotion: " );
+			Bot.NextBot.DisplayDebugText( "Locomotion: " );	
 			Bot.NextBot.DisplayDebugText( $"- Stuck: {IsStuck}" );
 			Bot.NextBot.DisplayDebugText( $"- Time Since Stuck: {TimeSinceStuck}" );
 			Bot.NextBot.DisplayDebugText( $"- Time Since Move Requested: {TimeSinceMoveRequested}" );
+		}
+
+		if ( NextBots.IsDebugging( NextBotDebugFlags.LookAt ) )
+		{
+			Bot.NextBot.DisplayDebugText( "Look At: " );
+			Bot.NextBot.DisplayDebugText( $"- Aim Rate: {AimRate}" );
+			Bot.NextBot.DisplayDebugText( $"- Is Head Steady: {IsHeadSteady()}" );
+			Bot.NextBot.DisplayDebugText( $"- Sighted In: {IsSightedIn}" );
+			Bot.NextBot.DisplayDebugText( $"- Head Steady Time: {GetHeadSteadyDuration()}" );
+			Bot.NextBot.DisplayDebugText( $"- Look At Duration: {LookAtDurationTimer.GetElapsedTime()}" );
+			Bot.NextBot.DisplayDebugText( $"- Look At Expire Timer: {LookAtExpireTimer.GetRemainingTime()}" );
 
 			DebugOverlay.Line( Bot.EyePosition, Bot.EyePosition + Bot.ViewVector * 100, Color.Cyan, 0.1f );
 		}
+	}
+
+	public override void Upkeep()
+	{
+		UpkeepAim();
 	}
 
 	TimeSince TimeSinceMoveRequested { get; set; }

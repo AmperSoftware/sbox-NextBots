@@ -74,6 +74,7 @@ public enum NextBotDebugFlags
 	Locomotion = 4,
 	Path = 8,
 	Vision = 16,
+	LookAt = 32,
 
 	All = 0xFFFF
 }
