@@ -17,8 +17,8 @@ public interface INextBot : IValid
 	public Vector3 BaseVelocity { get { return Entity.BaseVelocity; } set { Entity.BaseVelocity = value; } }
 	public Entity GroundEntity { get { return Entity.GroundEntity; } set { Entity.GroundEntity = value; } }
 
-	public Vector3 EyePosition => Entity.EyePosition;
-	public Rotation EyeRotation => Entity.EyeRotation;
+	public Vector3 EyePosition { get => Entity.EyePosition; set => Entity.EyePosition = value; }
+	public Rotation EyeRotation { get => Entity.EyeRotation; set => Entity.EyeRotation = value; }
 	public Vector3 ViewVector => EyeRotation.Forward;
 
 	public Vector3 Mins => WorldSpaceBounds.Mins - Position;

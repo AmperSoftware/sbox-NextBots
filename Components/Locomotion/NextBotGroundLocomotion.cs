@@ -282,10 +282,4 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		AccumulatedApproachVector += toTarget;
 		AccumulatedApproachWeight += goalWeight;
 	}
-
-	public override void FaceTowards( Vector3 target )
-	{
-		var toTarget = (target - Bot.EyePosition).Normal;
-		Bot.Entity.EyeRotation = Rotation.LookAt( toTarget );
-	}
 }

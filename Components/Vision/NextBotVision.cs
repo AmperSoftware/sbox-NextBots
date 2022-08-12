@@ -10,7 +10,7 @@ public interface INextBotVision
 	/// <summary>
 	/// A list of all entities we're currently aware of.
 	/// </summary>
-	public IEnumerable<KnownEntity> KnownEntities { get; }
+	public IReadOnlyList<KnownEntity> KnownEntities { get; }
 	/// <summary>
 	/// Return the known information about an entity.
 	/// </summary>
@@ -32,7 +32,7 @@ public interface INextBotVision
 /// </summary>
 public class NextBotVision : NextBotComponent, INextBotVision
 {
-	IEnumerable<KnownEntity> INextBotVision.KnownEntities => KnownEntities;
+	IReadOnlyList<KnownEntity> INextBotVision.KnownEntities => KnownEntities;
 	List<KnownEntity> KnownEntities { get; set; } = new();
 
 	float LastVisionUpdateTime { get; set; } = 0;

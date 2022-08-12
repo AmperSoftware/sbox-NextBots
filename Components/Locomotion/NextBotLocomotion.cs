@@ -21,17 +21,7 @@ public interface INextBotLocomotion : INextBotComponent
 	/// Move the bot towards a specific point.
 	/// </summary>
 	public void Approach( Vector3 point, float goalWeigth = 1 );
-	/// <summary>
-	/// Instantaneously move our vison towards a point in space.
-	/// </summary>
-	public void FaceTowards( Vector3 point );
-	/// <summary>
-	/// Do a jump in place.
-	/// </summary>
 	public void Jump();
-	/// <summary>
-	/// Modifies the point to add avoidance.
-	/// </summary>
 	public Vector3 Avoid( Vector3 point );
 
 
@@ -43,6 +33,7 @@ public interface INextBotLocomotion : INextBotComponent
 	public bool IsAbleToClimb();
 	public bool IsOnGround();
 
+	public void FaceTowards( Rotation lookAt );
 	public void AimHeadTowards( Vector3 lookAtPos, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
 	public void AimHeadTowards( Entity subject, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
 

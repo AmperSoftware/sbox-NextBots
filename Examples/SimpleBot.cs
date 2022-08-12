@@ -81,9 +81,6 @@ public class SimpleBotBehavior : NextBotAction<SimpleBot>
 			Path.Update( me );
 		}
 
-
-		me.NextBot.Locomotion.FaceTowards( known.LastKnownPosition + known.Entity.EyeLocalPosition );
-
 		return Continue();
 	}
 }

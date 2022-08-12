@@ -53,10 +53,10 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 		var fmove = forward.Dot( toPoint );
 		var smove = left.Dot( toPoint );
 
-		input.AnalogMove( new Vector3( fmove, smove, 0 ) );
+		input.SetAnalogMove( new Vector3( fmove, smove, 0 ) );
 	}
 
-	public override void FaceTowards( Vector3 target )
+	public override void FaceTowards( Rotation rotation )
 	{
 		var input = Bot.NextBot as INextBotPlayerInput;
 		if ( input == null )
@@ -65,7 +65,6 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 			return;
 		}
 
-		var toTarget = (target - Bot.EyePosition).Normal;
-		input.FaceTowards( Rotation.LookAt( toTarget ) );
+		input.SetViewAngles( rotation );
 	}
 }

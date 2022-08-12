@@ -63,7 +63,7 @@ partial class NextBotController : INextBotPlayerInput
 		// rotation
 		//
 
-		builder.ViewAngles = Input.Rotation.Angles();
+		builder.ViewAngles = Input.ViewAngles.Angles();
 	}
 
 	public void ReleaseExpiredButtons()
@@ -88,14 +88,14 @@ partial class NextBotController : INextBotPlayerInput
 			Input.AnalogMove = 0;
 	}
 
-	public void AnalogMove( Vector3 vector, float duration = -1 )
+	public void SetAnalogMove( Vector3 vector, float duration = -1 )
 	{
 		Input.AnalogMove = vector;
 		AnalogMoveTime = Time.Now + duration;
 	}
 
-	public void FaceTowards( Rotation rotation )
+	public void SetViewAngles( Rotation rotation )
 	{
-		Input.Rotation = rotation;
+		Input.ViewAngles = rotation;
 	}
 }

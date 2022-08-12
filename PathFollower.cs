@@ -31,8 +31,8 @@ public class NextBotPathFollower : IValid
 		var agentPath = NavMesh.PathBuilder( start )
 			.Build( goal );
 
-		if ( agentPath.TotalLength <= 0 )
-			return false;
+		if ( agentPath == null )
+			return false; 
 
 		Nodes = agentPath.Segments;
 
@@ -143,6 +143,7 @@ if ( m_goal->type == CLIMB_UP )
 				return;
 		}
 
+		bot.NextBot.Locomotion.AimHeadTowards( goalPos, LookAtPriorityType.Boring, 0.1f, "Body facing." );
 		bot.NextBot.Locomotion.Approach( goalPos );
 	}
 
