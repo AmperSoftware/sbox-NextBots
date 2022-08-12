@@ -112,7 +112,6 @@ if ( m_goal->type == CLIMB_UP )
 			}
 
 			NextBots.Msg( NextBotDebugFlags.Path, "PathFollower: NextBotOnMoveToFailure( Stuck ) because forward and left are ZERO" );
-
 			return;
 		}
 
@@ -143,7 +142,9 @@ if ( m_goal->type == CLIMB_UP )
 				return;
 		}
 
-		bot.NextBot.Locomotion.AimHeadTowards( goalPos, LookAtPriorityType.Boring, 0.1f, "Body facing." );
+		var lookAt = goalPos.WithZ( bot.EyePosition.z );
+
+		bot.NextBot.Locomotion.AimHeadTowards( lookAt, LookAtPriorityType.Boring, 0.1f, "Body facing." );
 		bot.NextBot.Locomotion.Approach( goalPos );
 	}
 

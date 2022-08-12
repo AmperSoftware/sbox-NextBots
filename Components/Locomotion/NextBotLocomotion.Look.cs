@@ -7,18 +7,17 @@ partial class NextBotLocomotion
 {
 	Vector3 LookAtPosition;
 	Entity LookAtSubject;
+	Vector3 LookAtVelocity;
 
 	public LookAtPriorityType LookAtPriority;
-	public CountdownTimer LookAtExpireTimer = new();	// How long until this look at expires
+	public CountdownTimer LookAtExpireTimer = new();    // How long until this look at expires
+	public CountdownTimer LookAtTrackingTimer = new();
 
 	public IntervalTimer LookAtDurationTimer = new();	// How long we have been looking at something
 	public IntervalTimer HeadSteadyTimer = new();       // How long we have kept our view steady at the object
 
 	public float AimRate;
-	public Rotation PriorAim;
-
-	public Vector3 AnchorForward;
-	public CountdownTimer AnchorRepositionTimer = new();
+	public Rotation LastEyeRotation;
 
 	public bool IsSightedIn;
 
@@ -27,50 +26,69 @@ partial class NextBotLocomotion
 	public virtual void UpkeepAim()
 	{
 		var deltaT = Time.Delta;
-		var angles = Bot.EyeRotation;
-		var forward = angles.Forward;
+		if ( deltaT < 0.00001f )
+			return;
 
-		var deltaDiff = angles.Distance( PriorAim );
-		AimRate = MathF.Abs( deltaDiff / deltaT );
-		PriorAim = angles;
-
-		TrackAimSteady();
-
-		if ( NextBots.IsDebugging( NextBotDebugFlags.LookAt ) )
-		{
-			if ( IsHeadSteady() )
-			{
-				var maxTime = 3;
-				var t = GetHeadSteadyDuration() / maxTime;
-				t = Math.Clamp( t, 0, 1 );
-				DebugOverlay.Sphere( Bot.EyePosition, t * 10, Color.Cyan, 2 * deltaT );
-			}
-		}
+		UpkeepAimSteady();
 
 		// if our current look-at has expired, don't change our aim further
 		if ( IsSightedIn && LookAtExpireTimer.IsElapsed() )
 			return;
-
-		var deltaAngle = MathF.Acos( forward.Dot( AnchorForward ) ).RadianToDegree();
-		if ( deltaAngle > nb_head_aim_resettle_angle )
-		{
-			AnchorRepositionTimer.Start( Rand.Float( 0.9f, 1.1f ) * nb_head_aim_resettle_time );
-			AnchorForward = forward;
-			return;
-		}
-
-		if ( AnchorRepositionTimer.HasStarted() && !AnchorRepositionTimer.IsElapsed() )
-			return;
-
-		AnchorRepositionTimer.Invalidate();
 		
 		// If we have a subject, update look at point.
-		var subject = LookAtSubject;
-		if ( subject.IsValid() )
+		if ( LookAtSubject.IsValid() )
 		{
-			LookAtPosition = subject.EyePosition;
+			UpdateLookAtPositionFromSubject( LookAtSubject );
 		}
 
+		MoveAimTowardsTarget();
+		CheckSightedOnTarget();
+	}
+
+	public const float OnTargetTolerance = 0.98f;
+
+	[ConVar.Server] public static float nb_test { get; set; } = 0;
+
+	public virtual void MoveAimTowardsTarget()
+	{
+		var forward = Bot.EyeRotation.Forward;
+		var toTarget = LookAtPosition - Bot.EyePosition;
+		toTarget = toTarget.Normal;
+		var dot = forward.Dot( toTarget );
+
+		// Get angles to move between
+		var currentAngles = forward.EulerAngles;
+		var desiredAngles = toTarget.EulerAngles;
+
+		// rotate view at a rate proportional to how far we have to turn
+		// max rate if we need to turn around
+		// want first derivative continuity of rate as our aim hits to avoid pop
+		var approachRate = GetHeadAimApproachRate();
+
+		// Ease out approach rate if we're close to our destination.
+		float easeOut = 0.7f;
+		if ( dot > easeOut )
+		{
+			var t = dot.RemapVal( easeOut, 1, 1, .02f );
+			approachRate *= MathF.Sin( 1.57f * t );
+		}
+
+		// Ease in when we start looking at.
+		var easeInTime = 0.25f;
+		if ( LookAtDurationTimer.GetElapsedTime() < easeInTime )
+			approachRate *= LookAtDurationTimer.GetElapsedTime() / easeInTime;
+
+		// Approach yaw and roll rotations.
+		var yaw = ApproachAngle( desiredAngles.yaw, currentAngles.yaw, approachRate * Time.Delta );
+		var pitch = ApproachAngle( desiredAngles.pitch, currentAngles.pitch, .5f * approachRate * Time.Delta );
+
+		var angles = new Angles( pitch, yaw, 0 );
+		Bot.NextBot.Locomotion.FaceTowards( angles );
+	}
+
+	public virtual void CheckSightedOnTarget()
+	{
+		var forward = Bot.EyeRotation.Forward;
 		var toTarget = LookAtPosition - Bot.EyePosition;
 		toTarget = toTarget.Normal;
 
@@ -87,14 +105,45 @@ partial class NextBotLocomotion
 		{
 			IsSightedIn = false;
 		}
-
-		var approachRate = nb_head_aim_max_approach_velocity;
-		var desiredAngles = Rotation.LookAt( toTarget, Vector3.Up );
-		var newAngles = Rotation.Lerp( angles, desiredAngles, approachRate * Time.Delta );
-		FaceTowards( newAngles );
 	}
 
-	public const float OnTargetTolerance = 0.98f;
+	public virtual void UpdateLookAtPositionFromSubject( Entity subject )
+	{
+		LookAtPosition = subject.WorldSpaceBounds.Center;
+	}
+
+	public virtual void UpkeepAimSteady()
+	{
+		//
+		// Update Aim Steady
+		//
+
+		var eyeRotation = Bot.EyeRotation;
+		var forward = eyeRotation.Forward;
+		var currentAngles = eyeRotation.Angles();
+
+		var deltaDiff = eyeRotation.Distance( LastEyeRotation );
+		AimRate = MathF.Abs( deltaDiff / Time.Delta );
+		LastEyeRotation = eyeRotation;
+
+		TrackAimSteady();
+
+		if ( NextBots.IsDebugging( NextBotDebugFlags.LookAt ) )
+		{
+			if ( IsHeadSteady() )
+			{
+				var maxTime = 3;
+				var t = GetHeadSteadyDuration() / maxTime;
+				t = Math.Clamp( t, 0, 1 );
+				DebugOverlay.Sphere( Bot.EyePosition, t * 10, Color.Cyan );
+			}
+
+			float thickness = IsHeadSteady() ? 2 : 3;
+			int r = IsSightedIn ? 255 : 0;
+			int g = LookAtSubject.IsValid() ? 255 : 0;
+			DebugOverlay.Arrow( Bot.EyePosition, LookAtPosition, thickness, Color.FromBytes( r, g, 1 ) );
+		}
+	}
 
 	public virtual bool TrackAimSteady()
 	{
@@ -113,10 +162,10 @@ partial class NextBotLocomotion
 		return false;
 	}
 
-	public virtual void FaceTowards( Rotation angles )
+	public virtual void FaceTowards( Angles angles )
 	{
 		// player body follows view direction
-		Bot.EyeRotation = angles;
+		Bot.EyeRotation = angles.ToRotation();
 	}
 
 	public virtual void AimHeadTowards( Vector3 lookAtPos, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" )
@@ -204,10 +253,56 @@ partial class NextBotLocomotion
 	/// How long the aim has been steady on the target?
 	/// </summary>
 	public virtual float GetHeadSteadyDuration() => HeadSteadyTimer.HasStarted() ? HeadSteadyTimer.GetElapsedTime() : 0;
+	public virtual float GetHeadAimApproachRate() => nb_head_aim_approach_rate;
 
 	[ConVar.Server] public static float nb_head_aim_steady_max_rate { get; set; } = 100;
 	[ConVar.Server] public static float nb_head_aim_settle_duration { get; set; } = 0.3f;
 	[ConVar.Server] public static float nb_head_aim_resettle_angle { get; set; } = 100;
 	[ConVar.Server] public static float nb_head_aim_resettle_time { get; set; } = 0.3f;
-	[ConVar.Server] public static float nb_head_aim_max_approach_velocity { get; set; } = 1000;
+	[ConVar.Server] public static float nb_head_aim_approach_rate { get; set; } = 1000;
+
+
+	// BUGBUG: Why doesn't this call angle diff?!?!?
+	float ApproachAngle( float target, float value, float speed )
+	{
+		float delta = target - value;
+
+		// Speed is assumed to be positive
+		if ( speed < 0 )
+			speed = -speed;
+
+		if ( delta < -180 )
+			delta += 360;
+		else if ( delta > 180 )
+			delta -= 360;
+
+		if ( delta > speed )
+			value += speed;
+		else if ( delta < -speed )
+			value -= speed;
+		else
+			value = target;
+
+		return value;
+	}
+
+
+	// BUGBUG: Why do we need both of these?
+	float AngleDiff( float destAngle, float srcAngle )
+	{
+		float delta;
+
+		delta = (destAngle - srcAngle) % 360;
+		if ( destAngle > srcAngle )
+		{
+			if ( delta >= 180 )
+				delta -= 360;
+		}
+		else
+		{
+			if ( delta <= -180 )
+				delta += 360;
+		}
+		return delta;
+	}
 }

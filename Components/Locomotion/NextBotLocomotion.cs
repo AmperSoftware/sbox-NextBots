@@ -33,7 +33,7 @@ public interface INextBotLocomotion : INextBotComponent
 	public bool IsAbleToClimb();
 	public bool IsOnGround();
 
-	public void FaceTowards( Rotation lookAt );
+	public void FaceTowards( Angles lookAt );
 	public void AimHeadTowards( Vector3 lookAtPos, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
 	public void AimHeadTowards( Entity subject, LookAtPriorityType priority = LookAtPriorityType.Boring, float duration = 0, string reason = "" );
 
@@ -74,6 +74,21 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 	}
 
 	public float DesiredSpeed { get; set; }
+
+	public override void Reset()
+	{
+		LookAtPosition = 0;
+		LookAtSubject = null;
+
+		LookAtPriority = LookAtPriorityType.Boring;
+		LookAtExpireTimer.Invalidate();
+		LookAtDurationTimer.Invalidate();
+		HeadSteadyTimer.Invalidate();
+
+		AimRate = 0;
+		LastEyeRotation = Rotation.Identity;
+		IsSightedIn = false;
+	}
 
 	public override void Update()
 	{

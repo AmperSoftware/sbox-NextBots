@@ -56,7 +56,7 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 		input.SetAnalogMove( new Vector3( fmove, smove, 0 ) );
 	}
 
-	public override void FaceTowards( Rotation rotation )
+	public override void FaceTowards( Angles angles )
 	{
 		var input = Bot.NextBot as INextBotPlayerInput;
 		if ( input == null )
@@ -65,6 +65,6 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 			return;
 		}
 
-		input.SetViewAngles( rotation );
+		input.SetViewAngles( angles );
 	}
 }

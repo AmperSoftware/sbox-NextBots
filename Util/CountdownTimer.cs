@@ -19,6 +19,11 @@ public class CountdownTimer
 		Duration = time;
 	}
 
+	public void Start( float min, float max )
+	{
+		Start( Rand.Float( min, max ) );
+	}
+
 	/// <summary>
 	/// Reset the timer, start it again.
 	/// </summary>
