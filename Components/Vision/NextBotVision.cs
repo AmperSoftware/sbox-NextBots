@@ -170,8 +170,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		var eyePos = Bot.EyePosition;
 
 		// Try tracing to world space center
-		var tr = Trace.Ray( eyePos, subject.WorldSpaceBounds.Center )
-			.Ignore( Bot.Entity )
+		var tr = SetupLineOfSightTrace( eyePos, subject.WorldSpaceBounds.Center )
 			.Ignore( subject )
 			.Run();
 
@@ -181,16 +180,14 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		// We hit something? Try tracing to eye position.
 		if ( tr.Hit )
 		{
-			tr = Trace.Ray( eyePos, subject.EyePosition )
-				.Ignore( Bot.Entity )
+			tr = SetupLineOfSightTrace( eyePos, subject.EyePosition )
 				.Ignore( subject )
 				.Run();
 
 			// We hit something? Try tracing to abs position.
 			if ( tr.Hit )
 			{
-				tr = Trace.Ray( eyePos, subject.Position )
-					.Ignore( Bot.Entity )
+				tr = SetupLineOfSightTrace( eyePos, subject.Position )
 					.Ignore( subject )
 					.Run();
 
@@ -201,6 +198,17 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		}
 
 		return true;
+	}
+
+	public virtual Trace SetupLineOfSightTrace( Vector3 origin, Vector3 end, bool ignoreActors = true )
+	{
+		var tr = Trace.Ray( origin, end )
+				.Ignore( Bot.Entity );
+
+		if ( ignoreActors )
+			tr = tr.WithoutTags( NextBots.CollisionTag );
+
+		return tr;
 	}
 
 	public bool IsLineOfSightClear( Vector3 point )

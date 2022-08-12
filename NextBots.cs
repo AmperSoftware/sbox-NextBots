@@ -9,6 +9,7 @@ public partial class NextBots
 	// But to achieve that we need to somehow interpolate our bots' movement. 
 	// When we achieve that, put this back to 0.1f.
 	[ConVar.Replicated] public static float nb_update_frequency { get; set; } = 0.1f;
+	public const string CollisionTag = "nextbot";
 
 	public static NextBots Current => _current == null ? (_current = new NextBots()) : _current;
 	static NextBots _current;
@@ -59,7 +60,7 @@ public partial class NextBots
 		for ( var i = (Bots.Count - 1); i >= 0; i-- )
 		{
 			var bot = Bots[i];
-			if ( bot == null || !bot.IsValid )
+			if ( !bot.IsValid() ) 
 			{
 				if ( IsDebugging() )
 					Log.Info( $"[NextBot] Purged Bot {bot.Bot} (#{i})" );

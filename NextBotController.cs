@@ -9,6 +9,7 @@ namespace Amper.NextBot;
 public partial class NextBotController : IValid, INextBotEventResponder
 {
 	public INextBot Bot { get; private set; }
+	public const string CollisionTag = "nextbot";
 
 	public NextBotComponent FirstComponent { get; set; }
 
@@ -67,6 +68,7 @@ public partial class NextBotController : IValid, INextBotEventResponder
 	{
 		LastUpdateTime = -999;
 		DisplayDebugLine = 0;
+		Bot.Entity?.Tags.Add( CollisionTag );
 
 		// update all components
 		for ( var comp = FirstComponent; comp != null; comp = comp.NextComponent )
@@ -106,6 +108,7 @@ public partial class NextBotController : IValid, INextBotEventResponder
 	{
 		return GetRangeTo( subject.Position );
 	}
+
 	public float GetRangeTo( Vector3 pos )
 	{
 		return Bot.Position.Distance( pos );

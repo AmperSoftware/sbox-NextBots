@@ -109,7 +109,27 @@ partial class NextBotLocomotion
 
 	public virtual void UpdateLookAtPositionFromSubject( Entity subject )
 	{
-		LookAtPosition = subject.WorldSpaceBounds.Center;
+		if ( LookAtTrackingTimer.IsElapsed() )
+		{
+			// update subject tracking by periodically estimating linear aim velocity, allowing for "slop" between updates
+			var desiredLookAtPos = subject.WorldSpaceBounds.Center;
+			desiredLookAtPos += GetHeadAimSubjectLeadTime() * subject.Velocity;
+
+			var errorVector = desiredLookAtPos - LookAtPosition;
+			float error = errorVector.Length;
+			errorVector = errorVector.Normal;
+
+			float trackingInterval = GetHeadAimTrackingInterval();
+			if ( trackingInterval < Time.Delta )
+				trackingInterval = Time.Delta;
+
+			float errorVel = error / trackingInterval;
+
+			LookAtVelocity = (errorVel * errorVector) + subject.Velocity;
+			LookAtTrackingTimer.Start( Rand.Float( 0.8f, 1.2f )* trackingInterval );
+		}
+
+		LookAtPosition += LookAtVelocity * Time.Delta;
 	}
 
 	public virtual void UpkeepAimSteady()
@@ -254,12 +274,15 @@ partial class NextBotLocomotion
 	/// </summary>
 	public virtual float GetHeadSteadyDuration() => HeadSteadyTimer.HasStarted() ? HeadSteadyTimer.GetElapsedTime() : 0;
 	public virtual float GetHeadAimApproachRate() => nb_head_aim_approach_rate;
+	public virtual float GetHeadAimSubjectLeadTime() => 0;
+	public virtual float GetHeadAimTrackingInterval() => nb_head_aim_tracking_interval;
 
 	[ConVar.Server] public static float nb_head_aim_steady_max_rate { get; set; } = 100;
 	[ConVar.Server] public static float nb_head_aim_settle_duration { get; set; } = 0.3f;
 	[ConVar.Server] public static float nb_head_aim_resettle_angle { get; set; } = 100;
 	[ConVar.Server] public static float nb_head_aim_resettle_time { get; set; } = 0.3f;
 	[ConVar.Server] public static float nb_head_aim_approach_rate { get; set; } = 1000;
+	[ConVar.Server] public static float nb_head_aim_tracking_interval { get; set; } = 0;
 
 
 	// BUGBUG: Why doesn't this call angle diff?!?!?
