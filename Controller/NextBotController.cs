@@ -12,7 +12,7 @@ public partial class NextBotController : IValid, INextBotEventResponder
 
 	public NextBotComponent FirstComponent { get; set; }
 
-	public INextBotIntention Intention { get; set; }
+	public NextBotIntention Intention { get; set; }
 	public NextBotLocomotion Locomotion { get; set; }
 	public NextBotVision Vision { get; set; }
 	public NextBotAnimator Animator { get; set; }

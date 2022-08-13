@@ -1,11 +1,13 @@
 ﻿namespace Amper.NextBot;
-
-public interface INextBotIntention { }
+public abstract class NextBotIntention : NextBotComponent
+{
+	public NextBotIntention( INextBot bot ) : base( bot ) { }
+}
 
 /// <summary>
 /// This is the intention interface for the bot. It contains one or more multiple behaviors.
 /// </summary>
-public class NextBotIntention<Actor, InitialAction> : NextBotComponent, INextBotIntention where Actor : INextBot where InitialAction : NextBotAction<Actor>, new()
+public class NextBotIntention<Actor, InitialAction> : NextBotIntention where Actor : INextBot where InitialAction : NextBotAction<Actor>, new()
 {
 	NextBotBehavior<Actor> Behavior { get; set; }
 	Actor Me { get; set; }

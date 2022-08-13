@@ -18,6 +18,8 @@ public partial class SimpleBot : AnimatedEntity, INextBot
 
 		EnableAllCollisions = true;
 		EnableHitboxes = true;
+		Tags.Add( "solid" );
+
 		SetupPhysicsFromAABB( PhysicsMotionType.Keyframed, new Vector3( -16, -16, 0 ), new Vector3( 16, 16, 72 ) );
 
 		NextBot = new( this )
