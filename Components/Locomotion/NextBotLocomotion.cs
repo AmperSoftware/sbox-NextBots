@@ -12,21 +12,27 @@ public partial class NextBotLocomotion : NextBotComponent
 	public NextBotLocomotion( INextBot me ) : base( me ) { }
 
 	// Locomotion Configuration
-	public NavAgentHull AgentHull { get; set; }
-	public float StepHeight { get; set; } = 18;
-	public float MaxDropDistance { get; set; } = -1;
-	public float MaxClimpDistance { get; set; } = -1;
-	public float DesiredSpeed { get; set; }
+	public NavAgentHull AgentHull;
+	public float StepHeight = 18;
+	public float MaxDropDistance = -1;
+	public float MaxClimpDistance = -1;
 
-	public Vector3 Position { get; set; }
-	public Vector3 Velocity { get; set; }
-	public Entity GroundEntity { get; set; }
-	public Vector3 MoveVector { get; set; }
+	// Speed
+	public float DesiredSpeed;
+	public float WalkSpeed = 100;
+	public float RunSpeed = 200;
 
+	public Vector3 Position;
+	public Vector3 Velocity;
+	public Entity GroundEntity;
+	public Vector3 MoveVector;
 
 	public override void Reset()
 	{
+		// Interpolation
 		InterpolationEnabled = true;
+
+		// Look At
 		LookAtPosition = 0;
 		LookAtSubject = null;
 
@@ -38,6 +44,9 @@ public partial class NextBotLocomotion : NextBotComponent
 		AimRate = 0;
 		LastEyeRotation = Rotation.Identity;
 		IsSightedIn = false;
+
+		// Move / Speed
+		DesiredSpeed = WalkSpeed;
 	}
 
 	public virtual void SetupFromBot( INextBot bot )
@@ -171,7 +180,19 @@ public partial class NextBotLocomotion : NextBotComponent
 	//
 
 	public virtual void Jump() { }
-	public virtual void Run() { }
-	public virtual void Walk() { }
-	public virtual void Stop() { }
+
+	public virtual void Run()
+	{
+		DesiredSpeed = RunSpeed;
+	}
+
+	public virtual void Walk()
+	{
+		DesiredSpeed = WalkSpeed;
+	}
+
+	public virtual void Stop()
+	{
+		DesiredSpeed = 0;
+	}
 }

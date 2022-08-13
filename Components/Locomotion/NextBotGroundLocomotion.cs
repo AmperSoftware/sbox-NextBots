@@ -10,20 +10,11 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 {
 	public NextBotGroundLocomotion( INextBot me ) : base( me ) { }
 
-	public float DefaultSpeed = 100;
-	public float RunSpeed = 200;
-
 	public float MaxStandableAngle = 45;
 	public float Acceleration = 15;
 	public float AirAcceleration = 10;
 	public float Gravity = 800;
 	public float JumpImpulse = 312;
-
-	public override void Reset()
-	{
-		base.Reset();
-		DesiredSpeed = DefaultSpeed;
-	}
 
 	public override void ProcessMovement()
 	{
@@ -238,20 +229,5 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		var toTarget = point - GetFeet();
 		AccumulatedApproachVector += toTarget;
 		AccumulatedApproachWeight += goalWeight;
-	}
-
-	public override void Run()
-	{
-		DesiredSpeed = RunSpeed;
-	}
-
-	public override void Walk()
-	{
-		DesiredSpeed = DefaultSpeed;
-	}
-
-	public override void Stop()
-	{
-		DesiredSpeed = 0;
 	}
 }

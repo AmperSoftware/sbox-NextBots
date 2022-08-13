@@ -1,5 +1,6 @@
 ﻿using Sandbox;
 using System.Collections.Generic;
+using System;
 
 namespace Amper.NextBot;
 
@@ -8,30 +9,57 @@ public class NextBotPathFollower : IValid
 	public float GoalTolerance = 25;
 	public float DropDistanceDropScale = 0.5f;
 	public float MaxPathDistance = -1;
+	public float MinLookAheadDistance = 300;
 	public bool AllowPartialPaths = false;
-	Vector3 LastGoalPosition;
 
-	NavPath _path;
+	public List<NavPathSegment> Segments = new();
+	Dictionary<NavPathSegment, int> SegmentIndexes = new();
+	public float TotalLength;
+	public int SegmentCount;
+	public TimeSince Age;
 
-	public IReadOnlyList<NavPathSegment> Segments => _path?.Segments;
-	public TimeSince Age => _path?.Age ?? default;
-	public float TotalLength => _path?.TotalLength ?? 0;
-	public int SegmentCount => _path?.Count ?? 0;
+	NavPathSegment Goal;
 
-	public int TargetSegmentIndex = 0;
+	public void Invalidate()
+	{
+		Segments.Clear();
+		SegmentIndexes.Clear();
 
+		TotalLength = 0;
+		SegmentCount = 0;
+
+		Goal = null;
+	}
+
+	private bool SetupPath( NavPath path )
+	{
+		if ( path == null )
+			return false;
+
+		Segments = path.Segments;
+
+		int i = 0;
+		foreach ( var segment in Segments )
+			SegmentIndexes[segment] = i++;
+
+		SegmentCount = path.Count;
+		TotalLength = path.TotalLength;
+		Age = path.Age;
+
+		Goal = FirstSegment();
+
+		return IsValid;
+	}
 
 	/// <summary>
 	/// Compute shortest path from bot to goal.
 	/// If returns true, path was found to the subject.
-	/// If returns false, path may either be invalid (use IsValid() to check), or valid but
-	/// doesn't reach all the way to the subject.
+	/// If returns false, path may either be invalid (use IsValid() to check).
 	/// </summary>
 	public bool Build( INextBot bot, Vector3 goal, float maxPathLength = -1, bool includeGoalIfPathFails = true )
 	{
 		Invalidate();
 		var start = bot.Position;
-		LastGoalPosition = goal;
 
 		start = NavMesh.GetClosestPoint( bot.Position ).Value;
 		goal = NavMesh.GetClosestPoint( goal ).Value;
@@ -50,6 +78,7 @@ public class NextBotPathFollower : IValid
 			.WithAgentHull( mover.AgentHull )
 			.WithMaxDropDistance( mover.MaxDropDistance )
 			.WithMaxClimbDistance( mover.MaxClimpDistance )
+
 			// Configuration from path
 			.WithDropDistanceCostScale( DropDistanceDropScale )
 			.WithMaxDistance( MaxPathDistance );
@@ -61,28 +90,17 @@ public class NextBotPathFollower : IValid
 		}
 
 		// Build the path.
-		_path = pathBuilder.Build( goal );
-		if ( _path == null )
+		var path = pathBuilder.Build( goal );
+		if ( path == null )
 			return false;
 
-		// We always need to have at least two nodes - end and start.
-		if ( Segments.Count < 2 )
+		if ( !SetupPath( path ) )
 		{
 			Invalidate();
 			return false;
 		}
 
-		// Move towards first node.
-		TargetSegmentIndex = 1;
-		NextBots.Msg( NextBotDebugFlags.Path, $"Path built for {bot}." );
-
-		return IsValid;
-	}
-
-	public void Invalidate()
-	{
-		_path = null;
-		TargetSegmentIndex = 0;
+		return true;
 	}
 
 	public void Update( INextBot bot )
@@ -91,54 +109,27 @@ public class NextBotPathFollower : IValid
 		bot.NextBot.Path = this;
 
 		// no segments in path.
-		if ( !IsValid )
-		{
-			bot.NextBot.Locomotion.Approach( LastGoalPosition );
+		if ( !IsValid || Goal == null ) 
 			return;
-		}
 
 		// draw path lines
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Path ) )
 			DebugDraw( bot );
 
-		if ( !CheckProgress( bot ) )
+		AdjustSpeed( bot );
+
+		// Check if maybe we have already reached our path.
+		if ( !CanContinueMovingAlongPath( bot ) )
 			return;
 
 		var mover = bot.NextBot.Locomotion;
+		var goalPos = Goal.Position;
 
-		var goalNode = GetTargetNode();
-		var goalPos = goalNode.Position;
-
-		var forward = goalNode.Position - mover.GetFeet();
-		forward.z = 0;
-		var goalRange = forward.Length;
+		var forward = goalPos - mover.GetFeet();
 		forward = forward.Normal;
 
-		var left = new Vector3( -forward.y, forward.x, 0 );
-
-		if ( left.IsNearlyZero() )
-		{
-			// if left is zero, forward must also be - path follow failure
-			bot.NextBot.InvokeEvent( new NextBotEventMoveToFailure { Path = this } );
-
-			// don't invalidate if NextBotOnMoveToFailure just recomputed a new path
-			if ( Age > 0 )
-			{
-				Invalidate();
-			}
-
-			NextBots.Msg( NextBotDebugFlags.Path, "PathFollower: NextBotOnMoveToFailure( Stuck ) because forward and left are ZERO" );
-			return;
-		}
-
-		// unit vectors must follow floor slope
 		var normal = mover.GetGroundNormal();
-
-		// get forward vector along floor
-		forward = forward.Cross( normal );
-
-		// correct the sideways vector
-		left = left.Cross( normal );
+		var left = new Vector3( -forward.y, forward.x, 0 );
 
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Path ) )
 		{
@@ -150,161 +141,60 @@ public class NextBotPathFollower : IValid
 			DebugOverlay.Line( feet, feet + axisSize * left, Color.Blue, 0.1f );
 		}
 
-		// climb ledges
-		if ( !Climbing( bot, goalNode, forward, left, goalRange ) )
-		{
-			// a failed climb could mean an invalid path
-			if ( !IsValid )
-				return;
-		}
-
 		var lookAt = goalPos.WithZ( bot.EyePosition.z );
 
 		bot.NextBot.Locomotion.AimHeadTowards( lookAt, LookAtPriorityType.Boring, 0.1f, "Body facing." );
 		bot.NextBot.Locomotion.Approach( goalPos );
 	}
 
-	public bool Climbing( INextBot bot, NavPathSegment goal, Vector3 forward, Vector3 left, float goalRange )
-	{
-		var mover = bot.NextBot.Locomotion;
-		
-		// Check if we're allowed to climb.
-		if ( !mover.IsAbleToClimb() || !nb_allow_climbing )
-			return false;
-
-		// Check if we're in state to climb.
-		if ( mover.IsClimbingOrJumping() || mover.IsAscendingOrDescendingLadder() || !mover.IsOnGround() )
-			return false;
-
-		var climbDirection = forward.WithZ( 0 ).Normal;
-
-		// we can't have this as large as our hull width, or we'll find ledges ahead of us
-		// that we will fall from when we climb up because our hull wont actually touch at the top.
-		float ledgeLookAheadRange = bot.WorldSpaceBounds.Size.x - 1;
-
-		// Disabled until s&box's NavMesh gives up proper ClimbUp attribute.
-#if false
-		// Trust what that nav mesh tells us.
-		// No need for expensive ledge-finding for games with simpler geometry 
-
-		if ( m_goal->type == CLIMB_UP )
-		{
-			const Segment *afterClimb = NextSegment( m_goal );
-			if ( afterClimb && afterClimb->area )
-			{
-				// find closest point on climb-destination area
-				Vector nearClimbGoal;
-				afterClimb->area->GetClosestPointOnArea( mover->GetFeet(), &nearClimbGoal );
-
-				climbDirection = nearClimbGoal - mover->GetFeet();
-				climbDirection.z = 0.0f;
-				climbDirection.NormalizeInPlace();
-
-				if ( mover->ClimbUpToLedge( nearClimbGoal, climbDirection, NULL ) )
-					return true;
-			}
-		}
-
-		return false;
-#endif
-
-		var heightDiff = goal.Position.z - bot.Position.z;
-		if ( heightDiff > mover.StepHeight )
-		{
-			mover.Jump();
-		}
-
-		return true;
-	}
-
-	public void DebugDraw( INextBot me )
-	{
-		var i = 0;
-		foreach ( var segment in Segments )
-		{
-			DebugOverlay.Line( segment.Position, segment.Position + segment.Forward * segment.Length, Color.Yellow, 0.1f, false );
-			DebugOverlay.Sphere( segment.Position, 2, Color.Blue, 0.1f , false);
-			DebugOverlay.Text(
-				$"How: {segment.How}\n" +
-				$"SegmentType: {segment.SegmentType}\n",
-			segment.Position, 0.1f );
-			i++;
-		}
-
-
-		if ( me.NextBot != null && me.NextBot.Path != null )
-		{
-			me.NextBot?.DisplayDebugText( "Locomotion:" );
-			me.NextBot?.DisplayDebugText( "- Path Segments: " + me.NextBot.Path.Segments.Count );
-			me.NextBot?.DisplayDebugText( "- Path Node Target: " + me.NextBot.Path.TargetSegmentIndex );
-		}
-	}
-
-	public bool CheckProgress( INextBot bot )
+	public bool CanContinueMovingAlongPath( INextBot bot )
 	{
 		var mover = bot.NextBot.Locomotion;
 
-#if false
-	// skip nearby goal points that are redundant to smooth path following motion
-	const Path::Segment *pSkipToGoal = NULL;
-	if ( m_minLookAheadRange > 0.0f )
-	{
-		pSkipToGoal = m_goal;
-		const Vector &myFeet = mover->GetFeet();
-		while( pSkipToGoal && pSkipToGoal->type == ON_GROUND && mover->IsOnGround() )
+		NavPathSegment skipToGoal = null;
+		if ( MinLookAheadDistance > 0 )
 		{
-			if ( ( pSkipToGoal->pos - myFeet ).IsLengthLessThan( m_minLookAheadRange ) )
-			{
-				// goal is too close - step to next segment
-				const Path::Segment *nextSegment = NextSegment( pSkipToGoal );
+			skipToGoal = Goal;
+			var myFeet = mover.GetFeet();
 
-				if ( !nextSegment || nextSegment->type != ON_GROUND )
+			while ( skipToGoal != null && skipToGoal.SegmentType == NavNodeType.OnGround && mover.IsOnGround() )
+			{
+				if ( (skipToGoal.Position - myFeet).Length < MinLookAheadDistance )
 				{
+					var nextSegment = NextSegment( skipToGoal );
+
 					// can't skip ahead to next segment - head towards current goal
-					break;
-				}
+					if ( nextSegment == null || nextSegment.SegmentType == NavNodeType.OnGround ) 
+						break;
 
-				if ( nextSegment->pos.z > myFeet.z + mover->GetStepHeight() )
-				{
 					// going uphill or up stairs tends to cause problems if we skip ahead, so don't
-					break;
-				}
+					if ( nextSegment.Position.z > myFeet.z + mover.StepHeight )
+						break;
 
-				// can we reach the next path segment directly
-				if ( mover->IsPotentiallyTraversable( myFeet, nextSegment->pos ) && !mover->HasPotentialGap( myFeet, nextSegment->pos ) )
-				{
-					pSkipToGoal = nextSegment;
+
 				}
 				else
 				{
-					// can't directly reach next segment - keep heading towards current goal
+					// goal is farther than min lookahead
 					break;
 				}
 			}
-			else
-			{
-				// goal is farther than min lookahead
-				break;
-			}
-		}
 
-		// didn't find any goal to skip to
-		if (pSkipToGoal == m_goal )
-		{
-			pSkipToGoal = NULL;
+			// didn't find any goal to skip to
+			if ( skipToGoal == Goal )
+				skipToGoal = null;
 		}
-	}
-#endif
 
 		if ( IsAtGoal( bot ) )
 		{
-			var nextSegment = GetNextNode();
+			var nextSegment = skipToGoal ?? NextSegment( Goal );
+
 			if ( nextSegment == null )
 			{
-				//if(mover.IsGround())
+				if ( mover.IsOnGround() ) 
 				{
 					NextBots.Msg( NextBotDebugFlags.Path, $"{bot} finished moving to target - Success!" );
-					// bot.NextBot.InvokeEvent( new NextBotEventMoveToSuccess() );
+					bot.NextBot.InvokeEvent( new NextBotEventMoveToSuccess() );
 
 					// don't invalidate if OnMoveToSuccess just recomputed a new path
 					if ( Age > 0 )
@@ -318,11 +208,26 @@ public class NextBotPathFollower : IValid
 			else
 			{
 				// keep moving.
-				TargetSegmentIndex++;
+				Goal = nextSegment;
 			}
 		}
 
 		return true;
+	}
+
+	public void AdjustSpeed( INextBot bot )
+	{
+		var mover = bot.NextBot.Locomotion;
+
+		if ( !mover.IsOnGround() )
+		{
+			// If we are in the air, use max speed.
+			mover.Run();
+			return;
+		}
+
+		// speed based on curvature
+		mover.DesiredSpeed = mover.RunSpeed + MathF.Abs( Goal.Curvature ) * (mover.WalkSpeed - mover.RunSpeed);
 	}
 
 	public bool IsAtGoal( INextBot bot )
@@ -330,54 +235,29 @@ public class NextBotPathFollower : IValid
 		var mover = bot.NextBot.Locomotion;
 
 		// node from which we are moving forward.
-		var currentNode = GetPriorNode();
+		var current = PriorSegment( Goal );
+		var toGoal = Goal.Position - mover.GetFeet();
 
-		// If we don't have a prior node, assume we're already on goal.
-		if ( currentNode == null )
+		// Passed goal.
+		if ( current == null )
 			return true;
 
-		var targetNode = GetTargetNode();
-		var toGoal = targetNode.Position - mover.GetFeet();
-
-#if false
-
-		const Segment *next = NextSegment( m_goal );
-
-		if ( next )
+		if ( Goal.SegmentType == NavNodeType.DropDown )
 		{
-			// because mover may be off the path, check if it crossed the plane of the goal
-			// check against average of current and next forward vectors
-			Vector2D dividingPlane;
+			var landing = NextSegment( Goal );
 
-			if ( current->ladder )
-			{
-				dividingPlane = m_goal->forward.AsVector2D();
-			}
-			else
-			{
-				dividingPlane = current->forward.AsVector2D() + m_goal->forward.AsVector2D();
-			}
+			// passed goal or corrupt path
+			if ( landing == null )
+				return true;
 
-			if ( DotProduct2D( toGoal.AsVector2D(), dividingPlane ) < 0.0001f &&
-				 abs( toGoal.z ) < body->GetStandHullHeight() )
-			{	
-				// only skip higher Z goal if next goal is directly reachable
-				// can't use this for positions below us because we need to be able
-				// to climb over random objects along our path that we can't actually
-				// move *through*
-				if ( toGoal.z < mover->GetStepHeight() && ( mover->IsPotentiallyTraversable( mover->GetFeet(), next->pos ) && !mover->HasPotentialGap( mover->GetFeet(), next->pos ) ) )
-				{
-					// passed goal
-					return true;
-				}
-			}
+			// did we reach the ground
+			if ( mover.GetFeet().z - landing.Position.z < mover.StepHeight )
+				return true;
 		}
-#endif
-		var sqrTolerance = GoalTolerance * GoalTolerance;
 
 		// proximity check
 		// Z delta can be anything, since we may be climbing over a tall fence, a physics prop, etc.
-		if ( toGoal.WithZ( 0 ).LengthSquared < sqrTolerance ) 
+		if ( toGoal.WithZ( 0 ).Length < GoalTolerance ) 
 		{
 			// reached goal
 			return true;
@@ -386,7 +266,52 @@ public class NextBotPathFollower : IValid
 		return false;
 	}
 
-	public NavPathSegment GetNode( int index )
+	public bool IsValid => SegmentCount > 0;
+
+	public float GetRemainingDistance( INextBot bot )
+	{
+		return 0;
+	}
+
+	public void DebugDraw( INextBot me )
+	{
+		var i = 0;
+		foreach ( var segment in Segments )
+		{
+			DebugOverlay.Line( segment.Position, segment.Position + segment.Forward * segment.Length, Color.Yellow, 0.1f, false );
+			DebugOverlay.Sphere( segment.Position, 2, Color.Blue, 0.1f, false );
+			DebugOverlay.Text(
+				$"How: {segment.How}\n" +
+				$"SegmentType: {segment.SegmentType}\n",
+			segment.Position, 0.1f );
+			i++;
+		}
+	}
+
+	public NavPathSegment FirstSegment()
+	{
+		return GetSegment( 0 );
+	}
+
+	public NavPathSegment NextSegment( NavPathSegment segment )
+	{
+		var index = GetSegmentIndex( segment );
+		if ( index == -1 )
+			return null;
+
+		return GetSegment( index + 1 );
+	}
+
+	public NavPathSegment PriorSegment( NavPathSegment segment )
+	{
+		var index = GetSegmentIndex( segment );
+		if ( index == -1 )
+			return null;
+
+		return GetSegment( index - 1 );
+	}
+
+	public NavPathSegment GetSegment( int index )
 	{
 		if ( index < 0 || index >= Segments.Count )
 			return null;
@@ -394,33 +319,12 @@ public class NextBotPathFollower : IValid
 		return Segments[index];
 	}
 
-	public NavPathSegment GetPriorNode() => GetNode( TargetSegmentIndex - 1 );
-	public NavPathSegment GetTargetNode() => GetNode( TargetSegmentIndex );
-	public NavPathSegment GetNextNode() => GetNode( TargetSegmentIndex + 1 );
-
-	public bool IsValid => SegmentCount > 0;
-
-	public float GetRemainingDistance( INextBot bot )
+	public int GetSegmentIndex( NavPathSegment segment )
 	{
-		if ( !IsValid )
-			return 0;
+		if ( SegmentIndexes.TryGetValue( segment, out var index ) )
+			return index;
 
-		var dist = 0f;
-		var targetNode = GetTargetNode();
-		if ( targetNode == null )
-			return 0;
-
-		dist += bot.Position.Distance( targetNode.Position );
-		for ( var i = TargetSegmentIndex + 1; i < SegmentCount; i++ )
-		{
-			var segment = GetNode( i );
-			if ( segment == null )
-				continue;
-
-			dist += segment.Length;
-		}
-
-		return dist;
+		return -1;
 	}
 
 	[ConVar.Server] public static bool nb_allow_climbing { get; set; } = true;

@@ -56,7 +56,7 @@ public class SimpleBotBehavior : NextBotAction<SimpleBot>
 			if ( repathTimer.IsElapsed() )
 			{
 				Path.Build( me, target.LastKnownPosition );
-				repathTimer.Start( Rand.Float( 1f, 1.5f ) );
+				repathTimer.Start( Rand.Float( .2f, .5f ) );
 			}
 
 			Path.Update( me );
