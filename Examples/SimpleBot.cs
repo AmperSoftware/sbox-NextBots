@@ -60,12 +60,14 @@ public class SimpleBotBehavior : NextBotAction<SimpleBot>
 			}
 
 			Path.Update( me );
-			var dist = Path.GetRemainingDistance( me );
-
-			if ( dist > 200 )
+			if ( me.NextBot.IsRangeGreaterThan( target.Entity, 200 ) )
+			{
 				me.NextBot.Locomotion.Run();
+			}
 			else
+			{
 				me.NextBot.Locomotion.Walk();
+			}
 		}
 
 		me.NextBot.Locomotion.AimHeadTowards( target.Entity.EyePosition, LookAtPriorityType.Important, 1, "Look at Target" );
