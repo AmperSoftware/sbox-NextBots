@@ -1,4 +1,5 @@
-﻿using Sandbox;
+﻿using System;
+using Sandbox;
 
 namespace Amper.NextBot;
 
@@ -15,40 +16,11 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 	public float Gravity { get; set; } = 800;
 	public float JumpImpulse { get; set; } = 312;
 
-	Vector3 Position { get; set; }
-	Vector3 Velocity { get; set; }
-	Vector3 BaseVelocity { get; set; }
-	Entity GroundEntity { get; set; }
-	Vector3 MoveVector { get; set; }
-
 	Vector3 AccumulatedApproachVector { get; set; }
 	float AccumulatedApproachWeight { get; set; }
 
-
-	public override void Upkeep()
+	public override void ProcessMovement()
 	{
-		Position = Bot.Position;
-		Velocity = Bot.Velocity;
-
-		base.Upkeep();
-		if ( IsOnGround() )
-		{
-			Move( Time.Delta, StepHeight );
-		}
-
-		// Bot.Position = Position;
-		// Bot.Velocity = Velocity;
-	}
-
-	public override void Update()
-	{
-		base.Update();
-
-		Position = Bot.Position;
-		Velocity = Bot.Velocity;
-		BaseVelocity = Bot.BaseVelocity;
-		GroundEntity = Bot.GroundEntity;
-
 		// Calculate final movement direction.
 		ApplyAccumulatedApproach();
 		AddGravity();
@@ -67,7 +39,7 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		AddGravity();
 
 		// If we are on ground, no downward velocity.
-		if ( IsOnGround() ) 
+		if ( IsOnGround() )
 		{
 			Velocity = Velocity.WithZ( 0 );
 		}
@@ -76,12 +48,6 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		{
 			StayOnGround();
 		}
-
-		// Do the move.
-		Bot.Position = Position;
-		Bot.Velocity = Velocity;
-		Bot.BaseVelocity = BaseVelocity;
-		Bot.GroundEntity = GroundEntity;
 	}
 
 	public void AddGravity()
@@ -245,33 +211,16 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		var newGround = tr.Entity;
 		var oldGround = GroundEntity;
 
-		var vecBaseVelocity = BaseVelocity;
-
 		if ( oldGround == null && newGround != null )
 		{
-			// Subtract ground velocity at instant we hit ground jumping
-			vecBaseVelocity -= newGround.Velocity;
-			vecBaseVelocity.z = newGround.Velocity.z;
-
 			Bot.NextBot.InvokeEvent<NextBotEventLandOnGround>();
 		}
 		else if ( oldGround != null && newGround == null )
 		{
-			// Add in ground velocity at instant we started jumping
-			vecBaseVelocity += oldGround.Velocity;
-			vecBaseVelocity.z = oldGround.Velocity.z;
-
 			Bot.NextBot.InvokeEvent<NextBotEventLeaveGround>();
 		}
 
-		BaseVelocity = vecBaseVelocity;
 		GroundEntity = newGround;
-
-		// If we are on something...
-		if ( newGround != null )
-		{
-			Velocity = Velocity.WithZ( 0 );
-		}
 	}
 
 	public override void Approach( Vector3 point, float goalWeight = 1 )

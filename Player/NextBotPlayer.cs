@@ -9,7 +9,7 @@ public abstract partial class NextBotPlayer : Bot
 	public INextBot Bot { get; set; }
 
 	public NextBotPlayer() : this( null ) { }
-	public NextBotPlayer( string name ) : base( name )
+	public NextBotPlayer( string name	) : base( name )
 	{
 		Bot = Client.Pawn as INextBot;
 		if ( Bot == null )
@@ -26,8 +26,7 @@ public abstract partial class NextBotPlayer : Bot
 		bot.NextBot = new( bot )
 		{
 			Locomotion = new NextBotPlayerLocomotion( bot ),
-			Vision = new NextBotVision( bot ),
-			Animator = new NextBotAnimator( bot )
+			Vision = new NextBotVision( bot )
 		};
 	}
 

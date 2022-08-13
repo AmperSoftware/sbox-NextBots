@@ -22,15 +22,17 @@ public class NextBotAnimator : NextBotComponent, INextBotAnimator
 		}
 	}
 
-	public override void Update()
+	public override void Upkeep()
 	{
 		// Set grounded
 		Entity.SetAnimParameter( "b_grounded", Bot.NextBot.Locomotion.IsOnGround() );
 
 		var viewVector = Entity.EyeRotation.Forward;
 
+		var eyeRot = Entity.EyeRotation;
 		// Update model's rotation.
 		UpdateRotation( viewVector );
+		Entity.EyeRotation = eyeRot;
 
 		// Update model's look direction.
 		UpdateLookAt( viewVector );

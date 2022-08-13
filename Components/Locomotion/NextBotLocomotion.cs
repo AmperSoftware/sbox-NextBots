@@ -75,8 +75,14 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 
 	public float DesiredSpeed { get; set; }
 
+	public Vector3 Position { get; set; }
+	public Vector3 Velocity { get; set; }
+	public Entity GroundEntity { get; set; }
+	public Vector3 MoveVector { get; set; }
+
 	public override void Reset()
 	{
+		InterpolationEnabled = true;
 		LookAtPosition = 0;
 		LookAtSubject = null;
 
@@ -90,9 +96,24 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 		IsSightedIn = false;
 	}
 
+	public virtual void SetupFromBot( INextBot bot )
+	{
+		Position = bot.Position;
+		Velocity = bot.Velocity;
+		GroundEntity = bot.GroundEntity;
+	}
+
+	public virtual void ApplyToBot( INextBot bot )
+	{
+		bot.Position = Position;
+		bot.Velocity = Velocity;
+		bot.GroundEntity = GroundEntity;
+	}
+
 	public override void Update()
 	{
 		StuckMonitor();
+		UpdateMovement();
 
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Locomotion ) )
 		{
@@ -116,13 +137,32 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 		}
 	}
 
+	public void UpdateMovement()
+	{
+		// Revert everything that interpolation did.
+		InterpolationMoveToFraction( 1 );
+
+		SetupFromBot( Bot );
+		StartInterpolation();
+
+		ProcessMovement();
+
+		StopInterpolation();
+		ApplyToBot( Bot );
+
+		// Start interpolating from our previous position.
+		InterpolationMoveToFraction( 0 );
+	}
+
+	public virtual void ProcessMovement() { }
+
 	public override void Upkeep()
 	{
 		UpkeepAim();
+		UpkeepInterpolate();
 	}
 
 	TimeSince TimeSinceMoveRequested { get; set; }
-	public float WishSpeed { get; set; }
 
 	public virtual float MaxJumpHeight { get; set; } = 32;
 	public virtual float StepHeight { get; set; } = 18;
@@ -142,7 +182,7 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 	public virtual bool IsClimbingOrJumping() => false;
 	public virtual bool IsAscendingOrDescendingLadder() => false;
 	public virtual bool IsAbleToClimb() => true;
-	public virtual bool IsOnGround() => Bot.GroundEntity != null;
+	public virtual bool IsOnGround() => Bot.GroundEntity.IsValid();
 
 	public virtual TraceResult TraceBBox( Vector3 start, Vector3 end )
 	{
@@ -168,7 +208,6 @@ public partial class NextBotLocomotion : NextBotComponent, INextBotLocomotion
 			// Collides with:
 			.WithAnyTags( CollisionTags.Solid )
 			.WithAnyTags( CollisionTags.Ladder )
-			.WithAnyTags( CollisionTags.Player )
 			.WithAnyTags( CollisionTags.Clip )
 			.WithAnyTags( CollisionTags.NPCClip )
 

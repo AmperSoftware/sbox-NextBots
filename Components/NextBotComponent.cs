@@ -34,6 +34,7 @@ public abstract partial class NextBotComponent : INextBotComponent, INextBotEven
 		CurrentInterval = Global.TickInterval;
 
 		Controller.RegisterComponent( this );
+		Reset();
 	}
 
 	public bool ComputeUpdateInterval()

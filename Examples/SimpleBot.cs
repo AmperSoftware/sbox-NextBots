@@ -41,46 +41,27 @@ public partial class SimpleBot : AnimatedEntity, INextBot
 
 public class SimpleBotBehavior : NextBotAction<SimpleBot>
 {
-	Entity Target;
-
 	CountdownTimer repathTimer = new();
 	NextBotPathFollower Path = new();
 
 	public override ActionResult<SimpleBot> Update( SimpleBot me, float interval )
 	{
-		// We don't have target, do nothing.
-		if ( Target == null )
-		{
-			// first entity we're aware of we will follow.
-			var firstKnown = me.NextBot.Vision.KnownEntities.FirstOrDefault();
-			if ( firstKnown != null )
-			{
-				Target = firstKnown.Entity;
-			}
-
-			if ( Target == null )
-				return Continue();
-		}
-
-		var known = me.NextBot.Vision.GetKnown( Target );
-		if ( known == null )
-		{
-			// Forget about the entity.
-			Target = null;
+		var target = me.NextBot.Vision.KnownEntities.FirstOrDefault();
+		if ( target == null )
 			return Continue();
-		}
 
-		if ( me.NextBot.IsRangeGreaterThan( Target, 100 ) )
+		if ( me.NextBot.IsRangeGreaterThan( target.Entity, 100 ) )
 		{
 			if ( repathTimer.IsElapsed() )
 			{
-				Path.Build( me, known.LastKnownPosition );
+				Path.Build( me, target.LastKnownPosition );
 				repathTimer.Start( Rand.Float( .2f, .4f ) );
 			}
 
 			Path.Update( me );
 		}
 
+		me.NextBot.Locomotion.AimHeadTowards( target.Entity.EyePosition, LookAtPriorityType.Important, .05f, "Look at Target" );
 		return Continue();
 	}
 }

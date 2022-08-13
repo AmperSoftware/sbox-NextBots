@@ -139,8 +139,6 @@ partial class NextBotLocomotion
 		//
 
 		var eyeRotation = Bot.EyeRotation;
-		var forward = eyeRotation.Forward;
-		var currentAngles = eyeRotation.Angles();
 
 		var deltaDiff = eyeRotation.Distance( LastEyeRotation );
 		AimRate = MathF.Abs( deltaDiff / Time.Delta );

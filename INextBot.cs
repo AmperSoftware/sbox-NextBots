@@ -11,11 +11,10 @@ public interface INextBot : IValid
 
 	public Entity Entity => this as Entity;
 
-	public Vector3 Position { get { return Entity.Position; } set { Entity.Position = value; } }
-	public Rotation Rotation { get { return Entity.Rotation; } set { Entity.Rotation = value; } }
-	public Vector3 Velocity { get { return Entity.Velocity; } set { Entity.Velocity = value; } }
-	public Vector3 BaseVelocity { get { return Entity.BaseVelocity; } set { Entity.BaseVelocity = value; } }
-	public Entity GroundEntity { get { return Entity.GroundEntity; } set { Entity.GroundEntity = value; } }
+	public Vector3 Position { get => Entity.Position; set => Entity.Position = value; }
+	public Rotation Rotation { get => Entity.Rotation; set => Entity.Rotation = value; }
+	public Vector3 Velocity { get => Entity.Velocity; set => Entity.Velocity = value; }
+	public Entity GroundEntity { get => Entity.GroundEntity; set => Entity.GroundEntity = value; }
 
 	public Vector3 EyePosition { get => Entity.EyePosition; set => Entity.EyePosition = value; }
 	public Rotation EyeRotation { get => Entity.EyeRotation; set => Entity.EyeRotation = value; }
