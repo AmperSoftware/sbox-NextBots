@@ -26,7 +26,8 @@ public partial class SimpleBot : AnimatedEntity, INextBot
 			Animator = new NextBotAnimator( this ),
 			Locomotion = new NextBotGroundLocomotion( this )
 			{
-				DesiredSpeed = 240
+				DesiredSpeed = 120,
+				RunSpeed = 200
 			},
 			Intention = new NextBotIntention<SimpleBot, SimpleBotBehavior>( this )
 		};

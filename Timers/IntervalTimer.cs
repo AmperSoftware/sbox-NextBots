@@ -26,23 +26,23 @@ public class IntervalTimer
 		Timestamp = -1.0f;
 	}
 
-	public bool HasStarted() 
+	public bool HasStarted()
 	{
 		return Timestamp > 0;
 	}
 
 	public float GetElapsedTime()
 	{
-		return HasStarted() ? (Time.Now - Timestamp) : 99999.9f;
+		return HasStarted() ? Time.Now - Timestamp : 99999.9f;
 	}
 
-	public bool IsLessThen( float duration ) 
+	public bool IsLessThen( float duration )
 	{
-		return (Time.Now - Timestamp < duration) ? true : false;
+		return Time.Now - Timestamp < duration ? true : false;
 	}
 
 	public bool IsGreaterThen( float duration )
 	{
-		return (Time.Now - Timestamp > duration) ? true : false;
+		return Time.Now - Timestamp > duration ? true : false;
 	}
 }

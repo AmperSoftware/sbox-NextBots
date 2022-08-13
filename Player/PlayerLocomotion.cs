@@ -6,9 +6,6 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 {
 	public NextBotPlayerLocomotion( INextBot me ) : base( me ) { }
 
-	bool IsJumping = false;
-	CountdownTimer JumpTimer = new();
-
 	public override void Reset()
 	{
 		// Players dont need upkeep interpolation,
@@ -16,6 +13,9 @@ public partial class NextBotPlayerLocomotion : NextBotLocomotion
 		// component.
 		InterpolationEnabled = false;
 	}
+
+	bool IsJumping = false;
+	CountdownTimer JumpTimer = new();
 
 	public override void Jump()
 	{

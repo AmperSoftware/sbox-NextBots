@@ -1,39 +1,17 @@
-﻿using System.Collections.Generic;
-using Sandbox;
+﻿using Sandbox;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Amper.NextBot;
 
-public interface INextBotVision
-{
-	/// <summary>
-	/// A list of all entities we're currently aware of.
-	/// </summary>
-	public IReadOnlyList<KnownEntity> KnownEntities { get; }
-	/// <summary>
-	/// Return the known information about an entity.
-	/// </summary>
-	public KnownEntity GetKnown( Entity entity );
-	/// <summary>
-	/// Alert the bot of this entity's presence. This will update our known position of the entity.
-	/// </summary>
-	public void AlertOfEntity( Entity entity );
-	public void SetFieldOfView( float fov );
-
-	public bool IsLineOfSightClear( Entity entity, bool cheaper = false );
-	public bool IsLineOfSightClear( Vector3 point );
-
-	public KnownEntity GetPrimaryKnownThreat( bool onlyVisibleThreats = false );
-}
-
 /// <summary>
 /// What the bot sees.
 /// </summary>
-public class NextBotVision : NextBotComponent, INextBotVision
+public class NextBotVision : NextBotComponent
 {
-	IReadOnlyList<KnownEntity> INextBotVision.KnownEntities => KnownEntities;
-	List<KnownEntity> KnownEntities { get; set; } = new();
+	public IReadOnlyList<KnownEntity> KnownEntities => _knownEntities;
+	public List<KnownEntity> _knownEntities { get; set; } = new();
 
 	float LastVisionUpdateTime { get; set; } = 0;
 	Entity PrimaryThreat { get; set; }
@@ -61,7 +39,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 	{
 		base.Reset();
 
-		KnownEntities.Clear();
+		_knownEntities.Clear();
 		LastVisionUpdateTime = 0;
 		PrimaryThreat = null;
 
@@ -72,7 +50,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 	{
 		if( nb_blind )
 		{
-			KnownEntities.Clear();
+			_knownEntities.Clear();
 			return;
 		}
 
@@ -292,7 +270,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 				var known = new KnownEntity( visibleNow[i] );
 				known.UpdatePosition();
 				known.UpdateVisibilityStatus( true );
-				KnownEntities.Add( known );
+				_knownEntities.Add( known );
 			}
 		}
 
@@ -303,7 +281,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 			// clear out obsolete knowledge
 			if ( known.IsObsolete() )
 			{
-				KnownEntities.RemoveAt( i );
+				_knownEntities.RemoveAt( i );
 				i--;
 				continue;
 			}
@@ -380,7 +358,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 			return;
 
 		// If we already know this entity, just update its position.
-		var known = KnownEntities.Find( x => x.Entity == entity );
+		var known = _knownEntities.Find( x => x.Entity == entity );
 		if ( known != null )
 		{
 			known.UpdatePosition();
@@ -388,7 +366,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 		}
 
 		// Otherwise add it to the list.
-		KnownEntities.Add( new KnownEntity( entity ) );
+		_knownEntities.Add( new KnownEntity( entity ) );
 	}
 
 	public virtual void ForgetEntity( Entity entity )
@@ -399,7 +377,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 			if ( known.Entity == entity ) 
 			{
-				KnownEntities.RemoveAt( i );
+				_knownEntities.RemoveAt( i );
 				return;
 			}
 		}
@@ -407,7 +385,7 @@ public class NextBotVision : NextBotComponent, INextBotVision
 
 	public virtual void ForgetAllKnownEntities()
 	{
-		KnownEntities.Clear();
+		_knownEntities.Clear();
 	}
 
 	public virtual KnownEntity GetPrimaryKnownThreat( bool onlyVisibleThreats = false )

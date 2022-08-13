@@ -5,8 +5,8 @@ namespace Amper.NextBot;
 public class CountdownTimer
 {
 	float ElapseTime = -1;
-    float Duration = 0;
-    bool FinishCalled = false;
+	float Duration = 0;
+	bool FinishCalled = false;
 
 	/// <summary>
 	/// Start the timer with this amount of seconds.
@@ -60,7 +60,7 @@ public class CountdownTimer
 	/// How much time is remaining?
 	/// </summary>
 	public float GetRemainingTime() => ElapseTime - Time.Now;
-	
+
 	/// <summary>
 	/// Has this timer finished? (NOTE: This is called only once per countdown 
 	/// so you can track down the exact tick when this timer has elapsed)

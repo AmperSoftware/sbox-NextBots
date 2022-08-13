@@ -5,17 +5,20 @@ namespace Amper.NextBot;
 
 public class NextBotPathFollower : IValid
 {
-	public NavPath Path { get; set; }
-	public List<NavPathSegment> Nodes { get; private set; } = new();
-	public int TargetNodeIndex { get; private set; } = 0;
-
-	/// <summary>
-	/// How old is this path?
-	/// </summary>
-	public TimeSince Age { get; private set; }
-
 	public float GoalTolerance = 25;
-	public float MinLookAheadRange = -1;
+	public float DropDistanceDropScale = 0.5f;
+	public float MaxPathDistance = -1;
+	public bool AllowPartialPaths = true;
+
+	NavPath _path;
+
+	public IReadOnlyList<NavPathSegment> Segments => _path?.Segments;
+	public TimeSince Age => _path?.Age ?? default;
+	public float TotalLength => _path?.TotalLength ?? 0;
+	public int SegmentCount => _path?.Count ?? 0;
+
+	public int TargetSegmentIndex = 0;
+
 
 	/// <summary>
 	/// Compute shortest path from bot to goal.
@@ -23,28 +26,49 @@ public class NextBotPathFollower : IValid
 	/// If returns false, path may either be invalid (use IsValid() to check), or valid but
 	/// doesn't reach all the way to the subject.
 	/// </summary>
-	public bool Build( INextBot bot, Vector3 goal, float maxPathLength = 0, bool includeGoalIfPathFails = true )
+	public bool Build( INextBot bot, Vector3 goal, float maxPathLength = -1, bool includeGoalIfPathFails = true )
 	{
 		Invalidate();
 		var start = bot.Position;
 
-		var agentPath = NavMesh.PathBuilder( start )
-			.Build( goal );
+		// Cant compute path without a locomotion component.
+		var mover = bot.NextBot.Locomotion;
+		if ( mover == null )
+		{
+			Log.Error( "Can't build path without locomotion component." );
+			return false;
+		}
 
-		if ( agentPath == null )
-			return false; 
+		var pathBuilder = NavMesh.PathBuilder( start )
+			// Configuration from Locomotion Interface
+			.WithStepHeight( mover.StepHeight )
+			.WithAgentHull( mover.AgentHull )
+			.WithMaxDropDistance( mover.MaxDropDistance )
+			.WithMaxClimbDistance( mover.MaxClimpDistance )
+			// Configuration from path
+			.WithDropDistanceCostScale( DropDistanceDropScale )
+			.WithMaxDistance( MaxPathDistance );
 
-		Nodes = agentPath.Segments;
+		// Allow partial paths to be built.
+		if ( AllowPartialPaths )
+		{
+			pathBuilder = pathBuilder.WithPartialPaths();
+		}
+
+		// Build the path.
+		_path = pathBuilder.Build( goal );
+		if ( _path == null )
+			return false;
 
 		// We always need to have at least two nodes - end and start.
-		if ( Nodes.Count < 2 )
+		if ( Segments.Count < 2 )
 		{
 			Invalidate();
 			return false;
 		}
 
 		// Move towards first node.
-		TargetNodeIndex = 1;
+		TargetSegmentIndex = 1;
 		NextBots.Msg( NextBotDebugFlags.Path, $"Path built for {bot}." );
 
 		return IsValid;
@@ -52,9 +76,8 @@ public class NextBotPathFollower : IValid
 
 	public void Invalidate()
 	{
-		Nodes.Clear();
-		TargetNodeIndex = 0;
-		Age = 0;
+		_path = null;
+		TargetSegmentIndex = 0;
 	}
 
 	public void Update( INextBot bot )
@@ -197,7 +220,7 @@ if ( m_goal->type == CLIMB_UP )
 
 	public void DebugDraw( INextBot me )
 	{
-		foreach ( var segment in Nodes )
+		foreach ( var segment in Segments )
 		{
 			DebugOverlay.Line( segment.Position, segment.Position + segment.Forward * segment.Length, Color.Yellow, 0.1f, false );
 			DebugOverlay.Sphere( segment.Position, 2, Color.Blue, 0.1f , false);
@@ -211,8 +234,8 @@ if ( m_goal->type == CLIMB_UP )
 		if ( me.NextBot != null && me.NextBot.Path != null )
 		{
 			me.NextBot?.DisplayDebugText( "Locomotion:" );
-			me.NextBot?.DisplayDebugText( "- Path Segments: " + me.NextBot.Path.Nodes.Count );
-			me.NextBot?.DisplayDebugText( "- Path Node Target: " + me.NextBot.Path.TargetNodeIndex );
+			me.NextBot?.DisplayDebugText( "- Path Segments: " + me.NextBot.Path.Segments.Count );
+			me.NextBot?.DisplayDebugText( "- Path Node Target: " + me.NextBot.Path.TargetSegmentIndex );
 		}
 	}
 
@@ -294,7 +317,7 @@ if ( m_goal->type == CLIMB_UP )
 			else
 			{
 				// keep moving.
-				TargetNodeIndex++;
+				TargetSegmentIndex++;
 			}
 		}
 
@@ -364,17 +387,17 @@ if ( m_goal->type == CLIMB_UP )
 
 	public NavPathSegment GetNode( int index )
 	{
-		if ( index < 0 || index >= Nodes.Count )
+		if ( index < 0 || index >= Segments.Count )
 			return null;
 
-		return Nodes[index];
+		return Segments[index];
 	}
 
-	public NavPathSegment GetPriorNode() => GetNode( TargetNodeIndex - 1 );
-	public NavPathSegment GetTargetNode() => GetNode( TargetNodeIndex );
-	public NavPathSegment GetNextNode() => GetNode( TargetNodeIndex + 1 );
+	public NavPathSegment GetPriorNode() => GetNode( TargetSegmentIndex - 1 );
+	public NavPathSegment GetTargetNode() => GetNode( TargetSegmentIndex );
+	public NavPathSegment GetNextNode() => GetNode( TargetSegmentIndex + 1 );
 
-	public bool IsValid => Nodes.Count > 0;
+	public bool IsValid => SegmentCount > 0;
 
 	[ConVar.Server] public static bool nb_allow_climbing { get; set; } = true;
 	[ConVar.Server] public static bool nb_allow_gap_jumping { get; set; } = true;

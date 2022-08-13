@@ -1,5 +1,4 @@
 ﻿using Sandbox;
-using System;
 
 namespace Amper.NextBot;
 
@@ -13,10 +12,10 @@ public partial class NextBotController : IValid, INextBotEventResponder
 
 	public NextBotComponent FirstComponent { get; set; }
 
-	public INextBotLocomotion Locomotion { get; set; }
 	public INextBotIntention Intention { get; set; }
-	public INextBotVision Vision { get; set; }
-	public INextBotAnimator Animator { get; set; }
+	public NextBotLocomotion Locomotion { get; set; }
+	public NextBotVision Vision { get; set; }
+	public NextBotAnimator Animator { get; set; }
 
 	public NextBotPathFollower Path { get; set; }
 
@@ -73,6 +72,14 @@ public partial class NextBotController : IValid, INextBotEventResponder
 		// update all components
 		for ( var comp = FirstComponent; comp != null; comp = comp.NextComponent )
 			comp.Reset();
+	}
+
+	public void DisplayDebugText( NextBotDebugFlags flags, string text )
+	{
+		if ( !NextBots.IsDebugging( flags ) )
+			return;
+
+		DisplayDebugText( text );
 	}
 
 	public void DisplayDebugText( string text )

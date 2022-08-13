@@ -10,14 +10,20 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 {
 	public NextBotGroundLocomotion( INextBot me ) : base( me ) { }
 
-	public float MaxStandableAngle { get; set; } = 45;
-	public float Acceleration { get; set; } = 15;
-	public float AirAcceleration { get; set; } = 10;
-	public float Gravity { get; set; } = 800;
-	public float JumpImpulse { get; set; } = 312;
+	public float DefaultSpeed = 100;
+	public float RunSpeed = 200;
 
-	Vector3 AccumulatedApproachVector { get; set; }
-	float AccumulatedApproachWeight { get; set; }
+	public float MaxStandableAngle = 45;
+	public float Acceleration = 15;
+	public float AirAcceleration = 10;
+	public float Gravity = 800;
+	public float JumpImpulse = 312;
+
+	public override void Reset()
+	{
+		base.Reset();
+		DesiredSpeed = DefaultSpeed;
+	}
 
 	public override void ProcessMovement()
 	{
@@ -223,6 +229,8 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		GroundEntity = newGround;
 	}
 
+	Vector3 AccumulatedApproachVector { get; set; }
+	float AccumulatedApproachWeight { get; set; }
 	public override void Approach( Vector3 point, float goalWeight = 1 )
 	{
 		base.Approach( point );

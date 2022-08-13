@@ -3,6 +3,27 @@ using System;
 
 namespace Amper.NextBot;
 
+public enum LookAtPriorityType
+{
+	Boring,
+	/// <summary>
+	/// Last known enemy location, dangerous sound location
+	/// </summary>
+	Interesting,
+	/// <summary>
+	/// A danger
+	/// </summary>
+	Important,
+	/// <summary>
+	/// An active threat to our safety
+	/// </summary>
+	Critical,
+	/// <summary>
+	/// Nothing can interrupt this look at - two simultaneous look ats with this priority is an error
+	/// </summary>
+	Mandatory
+};
+
 partial class NextBotLocomotion
 {
 	Vector3 LookAtPosition;
