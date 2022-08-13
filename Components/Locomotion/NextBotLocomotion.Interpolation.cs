@@ -37,13 +37,19 @@ partial class NextBotLocomotion
 
 	public void UpkeepInterpolate()
 	{
+		if ( !InterpolateTillNextUpdate )
+			return;
+
 		InterpolationTime += Time.Delta;
 		var fraction = Math.Clamp( InterpolationTime / CurrentInterval, 0, 1 );
 		InterpolationMoveToFraction( fraction );
 
-		DebugOverlay.Sphere( LastPosition, 5, Color.Green, CurrentInterval );
-		DebugOverlay.Sphere( Bot.Position, 5, Color.Yellow, CurrentInterval );
-		DebugOverlay.Sphere( UpdatePosition, 5, Color.Red, CurrentInterval );
+		if ( NextBots.IsDebugging( NextBotDebugFlags.Locomotion ) )
+		{
+			DebugOverlay.Sphere( LastPosition, 5, Color.Green, CurrentInterval );
+			DebugOverlay.Sphere( Bot.Position, 5, Color.Yellow, CurrentInterval );
+			DebugOverlay.Sphere( UpdatePosition, 5, Color.Red, CurrentInterval );
+		}
 	}
 
 	public void InterpolationMoveToFraction( float fraction )
