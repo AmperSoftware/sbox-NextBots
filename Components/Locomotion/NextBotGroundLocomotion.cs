@@ -239,4 +239,19 @@ public class NextBotGroundLocomotion : NextBotLocomotion
 		AccumulatedApproachVector += toTarget;
 		AccumulatedApproachWeight += goalWeight;
 	}
+
+	public override void Run()
+	{
+		DesiredSpeed = RunSpeed;
+	}
+
+	public override void Walk()
+	{
+		DesiredSpeed = DefaultSpeed;
+	}
+
+	public override void Stop()
+	{
+		DesiredSpeed = 0;
+	}
 }

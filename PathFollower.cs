@@ -8,7 +8,8 @@ public class NextBotPathFollower : IValid
 	public float GoalTolerance = 25;
 	public float DropDistanceDropScale = 0.5f;
 	public float MaxPathDistance = -1;
-	public bool AllowPartialPaths = true;
+	public bool AllowPartialPaths = false;
+	Vector3 LastGoalPosition;
 
 	NavPath _path;
 
@@ -30,6 +31,10 @@ public class NextBotPathFollower : IValid
 	{
 		Invalidate();
 		var start = bot.Position;
+		LastGoalPosition = goal;
+
+		start = NavMesh.GetClosestPoint( bot.Position ).Value;
+		goal = NavMesh.GetClosestPoint( goal ).Value;
 
 		// Cant compute path without a locomotion component.
 		var mover = bot.NextBot.Locomotion;
@@ -86,8 +91,11 @@ public class NextBotPathFollower : IValid
 		bot.NextBot.Path = this;
 
 		// no segments in path.
-		if ( !IsValid ) 
+		if ( !IsValid )
+		{
+			bot.NextBot.Locomotion.Approach( LastGoalPosition );
 			return;
+		}
 
 		// draw path lines
 		if ( NextBots.IsDebugging( NextBotDebugFlags.Path ) )
@@ -102,21 +110,6 @@ public class NextBotPathFollower : IValid
 		var goalPos = goalNode.Position;
 
 		var forward = goalNode.Position - mover.GetFeet();
-
-		// Climp Up is not used in s&box's navmesh.
-		// Facepunch pls fix.
-#if false
-if ( m_goal->type == CLIMB_UP )
-	{
-		const Segment *next = NextSegment( m_goal );
-		if ( next )
-		{
-			// use landing of climb up as forward to help ledge detection
-			forward = next->pos - mover->GetFeet();
-		}
-	}
-#endif
-
 		forward.z = 0;
 		var goalRange = forward.Length;
 		forward = forward.Normal;
@@ -215,11 +208,18 @@ if ( m_goal->type == CLIMB_UP )
 		return false;
 #endif
 
+		var heightDiff = goal.Position.z - bot.Position.z;
+		if ( heightDiff > mover.StepHeight )
+		{
+			mover.Jump();
+		}
+
 		return true;
 	}
 
 	public void DebugDraw( INextBot me )
 	{
+		var i = 0;
 		foreach ( var segment in Segments )
 		{
 			DebugOverlay.Line( segment.Position, segment.Position + segment.Forward * segment.Length, Color.Yellow, 0.1f, false );
@@ -228,6 +228,7 @@ if ( m_goal->type == CLIMB_UP )
 				$"How: {segment.How}\n" +
 				$"SegmentType: {segment.SegmentType}\n",
 			segment.Position, 0.1f );
+			i++;
 		}
 
 
@@ -398,6 +399,29 @@ if ( m_goal->type == CLIMB_UP )
 	public NavPathSegment GetNextNode() => GetNode( TargetSegmentIndex + 1 );
 
 	public bool IsValid => SegmentCount > 0;
+
+	public float GetRemainingDistance( INextBot bot )
+	{
+		if ( !IsValid )
+			return 0;
+
+		var dist = 0f;
+		var targetNode = GetTargetNode();
+		if ( targetNode == null )
+			return 0;
+
+		dist += bot.Position.Distance( targetNode.Position );
+		for ( var i = TargetSegmentIndex + 1; i < SegmentCount; i++ )
+		{
+			var segment = GetNode( i );
+			if ( segment == null )
+				continue;
+
+			dist += segment.Length;
+		}
+
+		return dist;
+	}
 
 	[ConVar.Server] public static bool nb_allow_climbing { get; set; } = true;
 	[ConVar.Server] public static bool nb_allow_gap_jumping { get; set; } = true;

@@ -18,7 +18,7 @@ public partial class SimpleBot : AnimatedEntity, INextBot
 
 		EnableAllCollisions = true;
 		EnableHitboxes = true;
-		SetupPhysicsFromAABB( PhysicsMotionType.Keyframed, new Vector3( -24, -24, 0 ), new Vector3( 24, 24, 72 ) );
+		SetupPhysicsFromAABB( PhysicsMotionType.Keyframed, new Vector3( -16, -16, 0 ), new Vector3( 16, 16, 72 ) );
 
 		NextBot = new( this )
 		{
@@ -56,13 +56,20 @@ public class SimpleBotBehavior : NextBotAction<SimpleBot>
 			if ( repathTimer.IsElapsed() )
 			{
 				Path.Build( me, target.LastKnownPosition );
-				repathTimer.Start( Rand.Float( .2f, .4f ) );
+				repathTimer.Start( Rand.Float( 1f, 1.5f ) );
 			}
 
 			Path.Update( me );
+			var dist = Path.GetRemainingDistance( me );
+
+			if ( dist > 200 )
+				me.NextBot.Locomotion.Run();
+			else
+				me.NextBot.Locomotion.Walk();
 		}
 
-		me.NextBot.Locomotion.AimHeadTowards( target.Entity.EyePosition, LookAtPriorityType.Important, .05f, "Look at Target" );
+		me.NextBot.Locomotion.AimHeadTowards( target.Entity.EyePosition, LookAtPriorityType.Important, 1, "Look at Target" );
+
 		return Continue();
 	}
 }

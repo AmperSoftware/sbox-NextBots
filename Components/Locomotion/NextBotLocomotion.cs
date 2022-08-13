@@ -64,6 +64,9 @@ public partial class NextBotLocomotion : NextBotComponent
 			Bot.NextBot.DisplayDebugText( "Locomotion: " );
 			Bot.NextBot.DisplayDebugText( $"- Desired Speed: {DesiredSpeed}" );
 			Bot.NextBot.DisplayDebugText( $"- Step Height: {StepHeight}" );
+			Bot.NextBot.DisplayDebugText( $"- MaxDropDistance: {MaxDropDistance}" );
+			Bot.NextBot.DisplayDebugText( $"- MaxClimpDistance: {MaxClimpDistance}" );
+			Bot.NextBot.DisplayDebugText( $"- Agent Hull: {AgentHull}" );
 			Bot.NextBot.DisplayDebugText( "Stuck: " );
 			Bot.NextBot.DisplayDebugText( $"- Stuck: {IsStuck}" );
 			Bot.NextBot.DisplayDebugText( $"- Time Since Stuck: {TimeSinceStuck}" );
