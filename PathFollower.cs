@@ -61,9 +61,6 @@ public class NextBotPathFollower : IValid
 		Invalidate();
 		var start = bot.Position;
 
-		start = NavMesh.GetClosestPoint( bot.Position ).Value;
-		goal = NavMesh.GetClosestPoint( goal ).Value;
-
 		// Cant compute path without a locomotion component.
 		var mover = bot.NextBot.Locomotion;
 		if ( mover == null )
